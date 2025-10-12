@@ -50,7 +50,6 @@ export default function SalesInputPage() {
     { groupId: selectedGroupId! },
     { enabled: !!selectedGroupId },
   );
-  console.log("Weekly Limits:", weeklyLimits);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {

@@ -43,7 +43,7 @@ export const salesColumns: ColumnDef<SaleData>[] = [
     accessorKey: "pricePerSeed",
     header: () => <div className="text-right">Price Per Seed</div>,
     cell: ({ row }) => {
-      const price = row.getValue("pricePerSeed");
+      const price: number | null = row.getValue("pricePerSeed");
       const formated = new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "USD",
@@ -69,7 +69,7 @@ export const salesColumns: ColumnDef<SaleData>[] = [
       );
     },
     cell: ({ row }) => {
-      const amount = row.getValue("seedsSold");
+      const amount: number = row.getValue("seedsSold");
       return <div className="text-right font-mono">{amount}</div>;
     },
   },
@@ -77,7 +77,7 @@ export const salesColumns: ColumnDef<SaleData>[] = [
     accessorKey: "totalPrice",
     header: () => <div className="text-right">Total Price</div>,
     cell: ({ row }) => {
-      const price = row.getValue("totalPrice");
+      const price: number | null = row.getValue("totalPrice");
       const formated = new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "USD",
@@ -101,7 +101,7 @@ export const salesColumns: ColumnDef<SaleData>[] = [
       );
     },
     cell: ({ row }) => {
-      const date = row.getValue("createdAt");
+      const date: Date = row.getValue("createdAt");
       return (
         <div>
           {new Intl.DateTimeFormat("id-ID", {

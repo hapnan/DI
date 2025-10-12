@@ -43,7 +43,7 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
     accessorKey: "costPerLeaf",
     header: () => <div className="text-right">Cost Per Leaf</div>,
     cell: ({ row }) => {
-      const cost = row.getValue("costPerLeaf");
+      const cost: number | null = row.getValue("costPerLeaf");
       return (
         <div className="text-right font-mono">
           {cost?.toLocaleString() ?? "N/A"}
@@ -67,7 +67,7 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
       );
     },
     cell: ({ row }) => {
-      const amount = row.getValue("leavesPurchased");
+      const amount: number = row.getValue("leavesPurchased");
       return <div className="text-right font-mono">{amount}</div>;
     },
   },
@@ -98,7 +98,7 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
       );
     },
     cell: ({ row }) => {
-      const date = row.getValue("createdAt");
+      const date: Date = row.getValue("createdAt");
       return (
         <div>
           {new Intl.DateTimeFormat("id-ID", {

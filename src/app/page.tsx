@@ -12,7 +12,7 @@ import { api, HydrateClient } from "~/trpc/server";
 
 export default async function Home() {
   // Prefetch some data for better performance
-  void api.sale.getTotalSold.prefetch();
+  await api.group.getAll.prefetch();
 
   return (
     <HydrateClient>

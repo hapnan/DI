@@ -28,7 +28,8 @@ export const weeklyLimitRouter = createTRPCRouter({
       const result = await ctx.db.execute(
         sql`SELECT * FROM get_or_create_weekly_limit(${input.groupId}, CURRENT_DATE)`,
       );
-      return result.rows[0] as WeeklyLimit;
+      const rows = result.rows as WeeklyLimit[];
+      return rows[0];
     }),
 
   // Get all groups' current limits
@@ -42,7 +43,7 @@ export const weeklyLimitRouter = createTRPCRouter({
       LEFT JOIN LATERAL get_or_create_weekly_limit(g.id, CURRENT_DATE) wl ON true
       ORDER BY g.id
     `);
-    return result;
+    return result.rows;
   }),
 
   // Manually trigger rollover for all groups
@@ -50,7 +51,7 @@ export const weeklyLimitRouter = createTRPCRouter({
     const result = await ctx.db.execute(
       sql`SELECT * FROM rollover_weekly_limits()`,
     );
-    return result;
+    return result.rows;
   }),
 
   // Get limit history for a group
@@ -63,6 +64,6 @@ export const weeklyLimitRouter = createTRPCRouter({
         ORDER BY "weekStart" DESC
         LIMIT 10
       `);
-      return result;
+      return result.rows;
     }),
 });
