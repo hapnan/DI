@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -38,7 +39,7 @@ export default function Error({
               Try again
             </Button>
             <Button variant="outline" asChild className="w-full">
-              <a href="/">Go home</a>
+              <Link href="/">Go home</Link>
             </Button>
           </div>
         </CardContent>
