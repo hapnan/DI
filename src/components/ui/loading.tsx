@@ -51,14 +51,14 @@ export function PageLoading({ text }: { text?: string }) {
     <Loading
       fullPage
       size="lg"
-      text={text || "Loading page..."}
+      text={text ?? "Loading page..."}
       className="bg-background"
     />
   );
 }
 
 export function SectionLoading({ text }: { text?: string }) {
-  return <Loading size="md" text={text || "Loading..."} className="py-12" />;
+  return <Loading size="md" text={text ?? "Loading..."} className="py-12" />;
 }
 
 export function InlineLoading({ text }: { text?: string }) {

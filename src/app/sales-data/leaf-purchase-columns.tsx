@@ -43,7 +43,7 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
     accessorKey: "costPerLeaf",
     header: () => <div className="text-right">Cost Per Leaf</div>,
     cell: ({ row }) => {
-      const cost = row.getValue("costPerLeaf") as number | null;
+      const cost = row.getValue("costPerLeaf");
       return (
         <div className="text-right font-mono">
           {cost?.toLocaleString() ?? "N/A"}
@@ -67,17 +67,15 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
       );
     },
     cell: ({ row }) => {
-      const amount = row.getValue("leavesPurchased") as number;
-      return (
-        <div className="text-right font-mono">{amount.toLocaleString()}</div>
-      );
+      const amount = row.getValue("leavesPurchased");
+      return <div className="text-right font-mono">{amount}</div>;
     },
   },
   {
     accessorKey: "totalCost",
     header: () => <div className="text-right">Total Cost</div>,
     cell: ({ row }) => {
-      const cost = row.getValue("totalCost") as number | null;
+      const cost = row.getValue("totalCost");
       return (
         <div className="text-right font-mono">
           {cost?.toLocaleString() ?? "N/A"}
@@ -100,7 +98,7 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
       );
     },
     cell: ({ row }) => {
-      const date = row.getValue("createdAt") as Date;
+      const date = row.getValue("createdAt");
       return (
         <div>
           {new Intl.DateTimeFormat("id-ID", {
@@ -117,7 +115,7 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
       const dateRange = value as DateRange | undefined;
       if (!dateRange) return true;
 
-      const rowDate = new Date(row.getValue(id) as Date);
+      const rowDate = new Date(row.getValue(id));
       const from = dateRange.from;
       const to = dateRange.to;
 
