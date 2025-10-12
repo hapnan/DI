@@ -7,9 +7,10 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { ThemeProvider } from "~/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "Seed Sales & Leaf Purchase Tracker",
-  description: "Track and manage seed sales and leaf purchase data efficiently",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  title: "Dejan Industries",
+  description: "Apake dah gede",
+  icons: [{ rel: "icon", url: "/android-chrome-192x192.png" }],
+  manifest: "/site.webmanifest",
 };
 
 const geist = Geist({
