@@ -1,5 +1,9 @@
 import { postRouter } from "~/server/api/routers/post";
+import { groupRouter } from "~/server/api/routers/group";
+import { saleRouter } from "~/server/api/routers/sale";
+import { leafPurchaseRouter } from "~/server/api/routers/leafPurchase";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
+import { weeklyLimitRouter } from "~/server/api/routers/weeklyLimit";
 
 /**
  * This is the primary router for your server.
@@ -8,6 +12,10 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   post: postRouter,
+  group: groupRouter,
+  sale: saleRouter,
+  leafPurchase: leafPurchaseRouter,
+  weeklyLimit: weeklyLimitRouter,
 });
 
 // export type definition of API

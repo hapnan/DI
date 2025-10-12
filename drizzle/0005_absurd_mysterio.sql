@@ -1,0 +1,1 @@
+ALTER TABLE "DI_group" ADD COLUMN "limitbuy" integer DEFAULT 400;
