@@ -28,7 +28,7 @@ export const weeklyLimitRouter = createTRPCRouter({
       const result = await ctx.db.execute(
         sql`SELECT * FROM get_or_create_weekly_limit(${input.groupId}, CURRENT_DATE)`,
       );
-      return result[0] as WeeklyLimit;
+      return result.rows[0] as WeeklyLimit;
     }),
 
   // Get all groups' current limits
