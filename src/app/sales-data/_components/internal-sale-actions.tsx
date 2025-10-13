@@ -41,12 +41,14 @@ import {
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useSession } from "~/lib/auth-client";
 
 type InternalSaleData = {
   id: number;
   seedsSold: number;
   pricePerSeed: number | null;
   totalPrice: number | null;
+  userId?: string;
   member: {
     id: number;
     name: string;
@@ -60,15 +62,29 @@ type InternalSaleData = {
 export function InternalSaleActions({ sale }: { sale: InternalSaleData }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || "Abu";
+  const userId = session?.user?.id;
+
   const [formData, setFormData] = useState({
     memberId: sale.member.id.toString(),
     seedTypeId: sale.seedType.id.toString(),
     seedsSold: sale.seedsSold.toString(),
-    pricePerSeed: (sale.pricePerSeed ?? 700).toString(),
   });
 
+  // Check permissions
+  const canEdit = () => {
+    if (userRole === "Abu") return false;
+    if (userRole === "Ijo") return sale.userId === userId;
+    return true;
+  };
+
+  const canDelete = () => {
+    return userRole === "Ultra" || userRole === "Raden";
+  };
+
   const utils = api.useUtils();
-  const { data: members } = api.group.getAll.useQuery(); // Using groups as members
+  const { data: members } = api.members.getAll.useQuery();
   const { data: seedTypes } = api.seedType.getAll.useQuery();
 
   const updateSale = api.internalSeed.update.useMutation({
@@ -94,21 +110,21 @@ export function InternalSaleActions({ sale }: { sale: InternalSaleData }) {
   });
 
   const handleUpdate = () => {
-    const totalPrice =
-      Number(formData.seedsSold) * Number(formData.pricePerSeed);
     updateSale.mutate({
       id: sale.id,
       memberId: Number(formData.memberId),
       seedTypeId: Number(formData.seedTypeId),
       seedsSold: Number(formData.seedsSold),
-      pricePerSeed: Number(formData.pricePerSeed),
-      totalPrice,
     });
   };
 
   const handleDelete = () => {
     deleteSale.mutate({ id: sale.id });
   };
+
+  if (!canEdit() && !canDelete()) {
+    return null;
+  }
 
   return (
     <>
@@ -127,17 +143,21 @@ export function InternalSaleActions({ sale }: { sale: InternalSaleData }) {
             Copy Sale ID
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setEditOpen(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit Sale
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="text-red-600"
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Sale
-          </DropdownMenuItem>
+          {canEdit() && (
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Sale
+            </DropdownMenuItem>
+          )}
+          {canDelete() && (
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Sale
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -206,27 +226,11 @@ export function InternalSaleActions({ sale }: { sale: InternalSaleData }) {
                 }
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="pricePerSeed">Price per Seed</Label>
-              <Input
-                id="pricePerSeed"
-                type="number"
-                value={formData.pricePerSeed}
-                onChange={(e) =>
-                  setFormData({ ...formData, pricePerSeed: e.target.value })
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Total Price</Label>
-              <Input
-                type="number"
-                value={
-                  Number(formData.seedsSold) * Number(formData.pricePerSeed)
-                }
-                readOnly
-                className="bg-muted"
-              />
+            <div className="bg-muted/50 rounded-md border p-3">
+              <p className="text-muted-foreground text-sm">
+                Price will be automatically calculated based on your role when
+                saved.
+              </p>
             </div>
           </div>
           <DialogFooter>

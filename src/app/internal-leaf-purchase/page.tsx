@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { Link, Loader2 } from "lucide-react";
 import * as React from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
+import { useSession } from "~/lib/auth-client";
 
 const leafPurchaseSchema = z.object({
   memberId: z.string().min(1, "Please select a member"),
@@ -45,8 +46,6 @@ const leafPurchaseSchema = z.object({
       (val) => !isNaN(Number(val)) && Number(val) >= 0,
       "Leaves purchased must be a non-negative number",
     ),
-  costPerLeaf: z.string().optional(),
-  totalCost: z.string().optional(),
 });
 
 type LeafPurchaseFormValues = z.infer<typeof leafPurchaseSchema>;
@@ -54,6 +53,7 @@ type LeafPurchaseFormValues = z.infer<typeof leafPurchaseSchema>;
 export default function LeafPurchaseInputPage() {
   const router = useRouter();
   const utils = api.useUtils();
+  const { data: session } = useSession();
 
   // Fetch all members
   const { data: members, isLoading: membersLoading } =
@@ -82,31 +82,40 @@ export default function LeafPurchaseInputPage() {
       memberId: "",
       leafTypeId: "1",
       leavesPurchased: "",
-      costPerLeaf: "200",
-      totalCost: "",
     },
   });
 
-  // Calculate total cost when leaves purchased or cost per leaf changes
   const watchLeavesPurchased = form.watch("leavesPurchased");
-  const watchCostPerLeaf = form.watch("costPerLeaf");
 
-  React.useEffect(() => {
-    if (watchLeavesPurchased && watchCostPerLeaf) {
-      const total = Number(watchLeavesPurchased) * Number(watchCostPerLeaf);
-      if (!isNaN(total)) {
-        form.setValue("totalCost", total.toString());
-      }
+  // Calculate price based on user role
+  const getPriceInfo = () => {
+    const role = (session?.user as any)?.role || "Abu";
+    let costPerLeaf = 200;
+
+    switch (role) {
+      case "Abu":
+        costPerLeaf = 150;
+        break;
+      case "Ijo":
+      case "Ultra":
+      case "Raden":
+        costPerLeaf = 200;
+        break;
     }
-  }, [watchLeavesPurchased, watchCostPerLeaf, form]);
+
+    const leavesPurchased = Number(watchLeavesPurchased) || 0;
+    const totalCost = leavesPurchased * costPerLeaf;
+
+    return { costPerLeaf, totalCost, role };
+  };
+
+  const { costPerLeaf, totalCost, role } = getPriceInfo();
 
   function onSubmit(values: LeafPurchaseFormValues) {
     createLeafPurchase.mutate({
       memberId: Number(values.memberId),
       leafTypeId: Number(values.leafTypeId),
       leavesPurchased: Number(values.leavesPurchased),
-      costPerLeaf: values.costPerLeaf ? Number(values.costPerLeaf) : 200,
-      totalCost: values.totalCost ? Number(values.totalCost) : 0,
     });
   }
 
@@ -199,6 +208,28 @@ export default function LeafPurchaseInputPage() {
                 )}
               />
 
+              {/* Pricing Information Display */}
+              <div className="bg-muted/50 space-y-2 rounded-md border p-4">
+                <p className="text-sm font-medium">Pricing Information</p>
+                <div className="text-muted-foreground space-y-1 text-sm">
+                  <p>
+                    Your Role:{" "}
+                    <span className="text-foreground font-medium">{role}</span>
+                  </p>
+                  <p>
+                    Cost per Leaf:{" "}
+                    <span className="text-foreground font-medium">
+                      Rp {costPerLeaf.toLocaleString()}
+                    </span>
+                  </p>
+                  {watchLeavesPurchased && (
+                    <p className="text-foreground pt-2 text-base font-semibold">
+                      Total Cost: Rp {totalCost.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <FormField
                 control={form.control}
                 name="leavesPurchased"
@@ -213,50 +244,7 @@ export default function LeafPurchaseInputPage() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Number of leaves purchased from the group
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="costPerLeaf"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cost per Leaf</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Enter cost per leaf"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>Default is 200 per leaf</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="totalCost"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total Cost</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Calculated automatically"
-                        {...field}
-                        readOnly
-                        className="bg-muted"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Automatically calculated based on leaves purchased and
-                      cost per leaf
+                      Number of leaves purchased from the member
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

@@ -1,23 +1,28 @@
 import { z } from "zod";
 import { eq, desc } from "drizzle-orm";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  ijoProcedure,
+  ultraProcedure,
+} from "~/server/api/trpc";
 import { seedTypes } from "~/server/db/schema";
 
 export const seedTypeRouter = createTRPCRouter({
-  // Get all seed types
-  getAll: publicProcedure.query(async ({ ctx }) => {
+  // Get all seed types - all authenticated users can view
+  getAll: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.select().from(seedTypes).orderBy(seedTypes.name);
   }),
 
-  // Get a seed type by ID
-  getById: publicProcedure
+  // Get a seed type by ID - all authenticated users
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       return ctx.db.select().from(seedTypes).where(eq(seedTypes.id, input.id));
     }),
 
-  // Create a new seed type
-  create: publicProcedure
+  // Create a new seed type - only Ijo and above
+  create: ijoProcedure
     .input(
       z.object({
         name: z.string().min(1).max(100),
@@ -29,8 +34,8 @@ export const seedTypeRouter = createTRPCRouter({
       return ctx.db.insert(seedTypes).values(input).returning();
     }),
 
-  // Update a seed type by ID
-  update: publicProcedure
+  // Update a seed type by ID - only Ultra and Raden
+  update: ultraProcedure
     .input(
       z.object({
         id: z.number(),
@@ -48,8 +53,8 @@ export const seedTypeRouter = createTRPCRouter({
         .returning();
     }),
 
-  // Delete a seed type by ID
-  delete: publicProcedure
+  // Delete a seed type by ID - only Ultra and Raden
+  delete: ultraProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.delete(seedTypes).where(eq(seedTypes.id, input.id));

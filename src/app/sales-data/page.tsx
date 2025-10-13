@@ -172,7 +172,7 @@ export default function SalesDataPage() {
                       </Button>
                     </div>
 
-                    {!leafPurchases || leafPurchases.length === 0 ? (
+                    {!leafPurchases || leafPurchases.data.length === 0 ? (
                       <div className="py-8 text-center text-gray-500">
                         <p>No leaf purchase data found.</p>
                         <p className="mt-2">
@@ -187,7 +187,7 @@ export default function SalesDataPage() {
                     ) : (
                       <DataTable
                         columns={leafPurchaseColumns}
-                        data={leafPurchases}
+                        data={leafPurchases.data}
                         searchKey="groupName"
                         searchPlaceholder="Filter by group name..."
                         dateFilterKey="createdAt"

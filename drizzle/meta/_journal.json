@@ -71,6 +71,13 @@
       "when": 1760381126724,
       "tag": "0010_skinny_gamora",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1760386168796,
+      "tag": "0011_add_auth_tables",
+      "breakpoints": true
     }
   ]
 }

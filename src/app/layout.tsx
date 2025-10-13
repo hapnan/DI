@@ -6,6 +6,7 @@ import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import { ThemeProvider } from "~/components/theme-provider";
 import { Toaster } from "sonner";
+import { Header } from "~/components/header";
 
 export const metadata: Metadata = {
   title: "Dejan Industries",
@@ -26,7 +27,10 @@ export default function RootLayout({
     <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <TRPCReactProvider>{children}</TRPCReactProvider>
+          <TRPCReactProvider>
+            <Header />
+            {children}
+          </TRPCReactProvider>
           <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>

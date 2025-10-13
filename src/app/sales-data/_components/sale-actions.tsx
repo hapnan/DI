@@ -41,12 +41,14 @@ import {
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useSession } from "~/lib/auth-client";
 
 type SaleData = {
   id: number;
   seedsSold: number;
   pricePerSeed: number | null;
   totalPrice: number | null;
+  userId?: string;
   group: {
     id: number;
     name: string;
@@ -60,12 +62,27 @@ type SaleData = {
 export function SaleActions({ sale }: { sale: SaleData }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || "Abu";
+  const userId = session?.user?.id;
+
   const [formData, setFormData] = useState({
     groupId: sale.group.id.toString(),
     seedTypeId: sale.seedType.id.toString(),
     seedsSold: sale.seedsSold.toString(),
-    pricePerSeed: (sale.pricePerSeed ?? 700).toString(),
   });
+
+  // Check if user can edit this record
+  const canEdit = () => {
+    if (userRole === "Abu") return false;
+    if (userRole === "Ijo") return sale.userId === userId;
+    return true; // Ultra and Raden can edit all
+  };
+
+  // Check if user can delete this record
+  const canDelete = () => {
+    return userRole === "Ultra" || userRole === "Raden";
+  };
 
   const utils = api.useUtils();
   const { data: groups } = api.group.getAll.useQuery();
@@ -94,21 +111,22 @@ export function SaleActions({ sale }: { sale: SaleData }) {
   });
 
   const handleUpdate = () => {
-    const totalPrice =
-      Number(formData.seedsSold) * Number(formData.pricePerSeed);
     updateSale.mutate({
       id: sale.id,
       groupId: Number(formData.groupId),
       seedTypeId: Number(formData.seedTypeId),
       seedsSold: Number(formData.seedsSold),
-      pricePerSeed: Number(formData.pricePerSeed),
-      totalPrice,
     });
   };
 
   const handleDelete = () => {
     deleteSale.mutate({ id: sale.id });
   };
+
+  // Don't show actions if user has no permissions
+  if (!canEdit() && !canDelete()) {
+    return null;
+  }
 
   return (
     <>
@@ -127,17 +145,21 @@ export function SaleActions({ sale }: { sale: SaleData }) {
             Copy Sale ID
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setEditOpen(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit Sale
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="text-red-600"
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Sale
-          </DropdownMenuItem>
+          {canEdit() && (
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Sale
+            </DropdownMenuItem>
+          )}
+          {canDelete() && (
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Sale
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -206,27 +228,11 @@ export function SaleActions({ sale }: { sale: SaleData }) {
                 }
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="pricePerSeed">Price per Seed</Label>
-              <Input
-                id="pricePerSeed"
-                type="number"
-                value={formData.pricePerSeed}
-                onChange={(e) =>
-                  setFormData({ ...formData, pricePerSeed: e.target.value })
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Total Price</Label>
-              <Input
-                type="number"
-                value={
-                  Number(formData.seedsSold) * Number(formData.pricePerSeed)
-                }
-                readOnly
-                className="bg-muted"
-              />
+            <div className="bg-muted/50 rounded-md border p-3">
+              <p className="text-muted-foreground text-sm">
+                Price will be automatically calculated based on your role when
+                saved.
+              </p>
             </div>
           </div>
           <DialogFooter>

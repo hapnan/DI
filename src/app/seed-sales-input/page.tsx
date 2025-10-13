@@ -34,6 +34,7 @@ import {
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useSession } from "~/lib/auth-client";
 
 const seedSalesSchema = z.object({
   memberId: z.string().min(1, "Please select a member"),
@@ -45,8 +46,6 @@ const seedSalesSchema = z.object({
       (val) => !isNaN(Number(val)) && Number(val) > 0,
       "Seeds sold must be a positive number",
     ),
-  pricePerSeed: z.string(),
-  totalPrice: z.string(),
 });
 
 type SeedSalesFormValues = z.infer<typeof seedSalesSchema>;
@@ -54,6 +53,7 @@ type SeedSalesFormValues = z.infer<typeof seedSalesSchema>;
 export default function SeedSalesInputPage() {
   const router = useRouter();
   const utils = api.useUtils();
+  const { data: session } = useSession();
 
   // Fetch all members
   const { data: members, isLoading: membersLoading } =
@@ -82,33 +82,42 @@ export default function SeedSalesInputPage() {
       memberId: "",
       seedTypeId: "1",
       seedsSold: "",
-      totalPrice: "",
-      pricePerSeed: "700",
     },
   });
 
-  // Calculate total price when seeds sold or price per seed changes
-  const watchPricePerSeed = form.watch("pricePerSeed");
   const watchSeedsSold = form.watch("seedsSold");
 
-  React.useEffect(() => {
-    if (watchSeedsSold && watchPricePerSeed) {
-      const total = Number(watchPricePerSeed) * Number(watchSeedsSold);
-      if (!isNaN(total)) {
-        form.setValue("totalPrice", total.toString());
-      }
+  // Calculate price based on user role
+  const getPriceInfo = () => {
+    const role = (session?.user as any)?.role || "Abu";
+    let pricePerSeed = 700;
+
+    switch (role) {
+      case "Abu":
+        pricePerSeed = 100;
+        break;
+      case "Ijo":
+        pricePerSeed = 200;
+        break;
+      case "Ultra":
+      case "Raden":
+        pricePerSeed = 700;
+        break;
     }
-  }, [watchSeedsSold, watchPricePerSeed, form]);
+
+    const seedsSold = Number(watchSeedsSold) || 0;
+    const totalPrice = seedsSold * pricePerSeed;
+
+    return { pricePerSeed, totalPrice, role };
+  };
+
+  const { pricePerSeed, totalPrice, role } = getPriceInfo();
 
   function onSubmit(values: SeedSalesFormValues) {
     createSale.mutate({
       memberId: parseInt(values.memberId),
       seedTypeId: parseInt(values.seedTypeId),
       seedsSold: parseInt(values.seedsSold),
-      pricePerSeed: Math.round(
-        parseInt(values.totalPrice) / parseInt(values.seedsSold),
-      ),
-      totalPrice: parseInt(values.totalPrice),
     });
   }
 
@@ -201,6 +210,28 @@ export default function SeedSalesInputPage() {
                 )}
               />
 
+              {/* Pricing Information Display */}
+              <div className="bg-muted/50 space-y-2 rounded-md border p-4">
+                <p className="text-sm font-medium">Pricing Information</p>
+                <div className="text-muted-foreground space-y-1 text-sm">
+                  <p>
+                    Your Role:{" "}
+                    <span className="text-foreground font-medium">{role}</span>
+                  </p>
+                  <p>
+                    Price per Seed:{" "}
+                    <span className="text-foreground font-medium">
+                      Rp {pricePerSeed.toLocaleString()}
+                    </span>
+                  </p>
+                  {watchSeedsSold && (
+                    <p className="text-foreground pt-2 text-base font-semibold">
+                      Total Price: Rp {totalPrice.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <FormField
                 control={form.control}
                 name="seedsSold"
@@ -215,52 +246,7 @@ export default function SeedSalesInputPage() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Number of seeds sold to the group
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="pricePerSeed"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price per Seed</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Calculated automatically"
-                        {...field}
-                        className="bg-muted"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Automatically calculated based on seeds sold and total
-                      price
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="totalPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total Price</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Price"
-                        {...field}
-                        readOnly
-                        className="bg-muted"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Automatically calculated based on seeds sold and price per
-                      seed
+                      Number of seeds sold to the member
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

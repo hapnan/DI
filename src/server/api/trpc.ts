@@ -6,11 +6,12 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { db } from "~/server/db";
+import { auth } from "~/lib/auth";
 
 /**
  * 1. CONTEXT
@@ -25,8 +26,20 @@ import { db } from "~/server/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+  // Get the session from better-auth
+  const session = await auth.api.getSession({
+    headers: opts.headers,
+  });
+
   return {
     db,
+    session: session?.session ?? null,
+    user: session?.user
+      ? {
+          ...session.user,
+          role: (session.user as any).role as string, // Type assertion for role field
+        }
+      : null,
     ...opts,
   };
 };
@@ -104,3 +117,92 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * are logged in.
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
+
+/**
+ * Protected (authenticated) procedure
+ *
+ * If you want a query or mutation to ONLY be accessible to logged in users, use this. It verifies
+ * the session is valid and guarantees `ctx.session` and `ctx.user` are not null.
+ *
+ * @see https://trpc.io/docs/procedures
+ */
+export const protectedProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(async ({ ctx, next }) => {
+    if (!ctx.session || !ctx.user) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "Not authenticated",
+      });
+    }
+    return next({
+      ctx: {
+        // infers the `session` and `user` as non-nullable
+        session: ctx.session,
+        user: ctx.user,
+      },
+    });
+  });
+
+/**
+ * Role-based procedures
+ *
+ * These procedures enforce specific role requirements:
+ * - Raden: Full admin access
+ * - Ultra: All access except user management
+ * - Ijo: Limited access - can create/edit own entries
+ * - Abu: Read-only access
+ */
+
+// Raden only (full admin)
+export const radenProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  if (ctx.user.role !== "Raden") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Only administrators can perform this action",
+    });
+  }
+  return next({ ctx });
+});
+
+// Ultra and above (Raden, Ultra)
+export const ultraProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  if (!["Raden", "Ultra"].includes(ctx.user.role)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Insufficient permissions",
+    });
+  }
+  return next({ ctx });
+});
+
+// Ijo and above (Raden, Ultra, Ijo) - can create/edit
+export const ijoProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  if (!["Raden", "Ultra", "Ijo"].includes(ctx.user.role)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You don't have permission to modify data",
+    });
+  }
+  return next({ ctx });
+});
+
+// Read-only check for Abu users
+export const canModifyData = (userRole: string): boolean => {
+  return ["Raden", "Ultra", "Ijo"].includes(userRole);
+};
+
+// Check if user can edit specific record (Ijo can only edit their own)
+export const canEditRecord = (
+  userRole: string,
+  userId: string,
+  recordUserId: string,
+): boolean => {
+  if (["Raden", "Ultra"].includes(userRole)) {
+    return true; // Can edit any record
+  }
+  if (userRole === "Ijo") {
+    return userId === recordUserId; // Can only edit own records
+  }
+  return false; // Abu cannot edit
+};

@@ -1,11 +1,16 @@
 import { z } from "zod";
 import { eq, desc } from "drizzle-orm";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  ijoProcedure,
+  ultraProcedure,
+} from "~/server/api/trpc";
 import { leafTypes, seedTypes } from "~/server/db/schema";
 
 export const leafTypeRouter = createTRPCRouter({
-  // Get all leaf types
-  getAll: publicProcedure.query(async ({ ctx }) => {
+  // Get all leaf types - all authenticated users can view
+  getAll: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db
       .select({
         id: leafTypes.id,
@@ -25,8 +30,8 @@ export const leafTypeRouter = createTRPCRouter({
       .orderBy(desc(leafTypes.createdAt));
   }),
 
-  // Get a leaf type by ID
-  getById: publicProcedure
+  // Get a leaf type by ID - all authenticated users
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       const result = await ctx.db
@@ -50,8 +55,8 @@ export const leafTypeRouter = createTRPCRouter({
       return result[0];
     }),
 
-  // Create a new leaf type
-  create: publicProcedure
+  // Create a new leaf type - only Ijo and above
+  create: ijoProcedure
     .input(
       z.object({
         name: z.string().max(100),
@@ -64,8 +69,8 @@ export const leafTypeRouter = createTRPCRouter({
       return ctx.db.insert(leafTypes).values(input).returning();
     }),
 
-  // Update a leaf type
-  update: publicProcedure
+  // Update a leaf type - only Ultra and Raden
+  update: ultraProcedure
     .input(
       z.object({
         id: z.number(),
@@ -84,8 +89,8 @@ export const leafTypeRouter = createTRPCRouter({
         .returning();
     }),
 
-  // Delete a leaf type
-  delete: publicProcedure
+  // Delete a leaf type - only Ultra and Raden
+  delete: ultraProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.delete(leafTypes).where(eq(leafTypes.id, input.id));

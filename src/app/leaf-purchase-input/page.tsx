@@ -35,18 +35,18 @@ import { InlineLoading, ButtonLoading } from "~/components/ui/loading";
 
 import { api } from "~/trpc/react";
 import { MdArrowBackIosNew } from "react-icons/md";
+import { useSession } from "~/lib/auth-client";
 
 const formSchema = z.object({
   groupId: z.string().min(1, "Please select a group"),
   leafTypeId: z.string().min(1, "Please select a leaf type"),
   leavesPurchased: z.string().min(1, "Please enter number of leaves purchased"),
-  costPerLeaf: z.string().optional(),
-  totalCost: z.string().min(1, "Please enter total cost"),
 });
 
 export default function LeafPurchaseInputPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: session } = useSession();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,9 +54,34 @@ export default function LeafPurchaseInputPage() {
       groupId: "",
       leafTypeId: "1",
       leavesPurchased: "",
-      totalCost: "",
     },
   });
+
+  const watchLeavesPurchased = form.watch("leavesPurchased");
+
+  // Calculate price based on user role
+  const getPriceInfo = () => {
+    const role = (session?.user as any)?.role || "Abu";
+    let costPerLeaf = 200;
+
+    switch (role) {
+      case "Abu":
+        costPerLeaf = 150;
+        break;
+      case "Ijo":
+      case "Ultra":
+      case "Raden":
+        costPerLeaf = 200;
+        break;
+    }
+
+    const leavesPurchased = Number(watchLeavesPurchased) || 0;
+    const totalCost = leavesPurchased * costPerLeaf;
+
+    return { costPerLeaf, totalCost, role };
+  };
+
+  const { costPerLeaf, totalCost, role } = getPriceInfo();
 
   // Get all groups for the select dropdown
   const { data: groups, isLoading: groupsLoading } =
@@ -86,10 +111,6 @@ export default function LeafPurchaseInputPage() {
         groupId: parseInt(values.groupId),
         leafTypeId: parseInt(values.leafTypeId),
         leavesPurchased: parseInt(values.leavesPurchased),
-        totalCost: parseInt(values.totalCost),
-        costPerLeaf: Math.round(
-          parseInt(values.totalCost) / parseInt(values.leavesPurchased),
-        ),
       });
     } catch (error) {
       console.error("Submit error:", error);
@@ -194,6 +215,29 @@ export default function LeafPurchaseInputPage() {
                   </FormItem>
                 )}
               />
+
+              {/* Pricing Information Display */}
+              <div className="bg-muted/50 space-y-2 rounded-md border p-4">
+                <p className="text-sm font-medium">Pricing Information</p>
+                <div className="text-muted-foreground space-y-1 text-sm">
+                  <p>
+                    Your Role:{" "}
+                    <span className="text-foreground font-medium">{role}</span>
+                  </p>
+                  <p>
+                    Cost per Leaf:{" "}
+                    <span className="text-foreground font-medium">
+                      Rp {costPerLeaf.toLocaleString()}
+                    </span>
+                  </p>
+                  {watchLeavesPurchased && (
+                    <p className="text-foreground pt-2 text-base font-semibold">
+                      Total Cost: Rp {totalCost.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <FormField
                 control={form.control}
                 name="leavesPurchased"
@@ -205,24 +249,6 @@ export default function LeafPurchaseInputPage() {
                         type="number"
                         min="0"
                         placeholder="Enter number of leaves purchased"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="totalCost"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total Cost</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="Enter total cost"
                         {...field}
                       />
                     </FormControl>

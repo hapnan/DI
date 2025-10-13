@@ -1,24 +1,37 @@
 import { z } from "zod";
-import { eq, desc, sql, count } from "drizzle-orm";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { eq, desc, sql, count, and } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  ijoProcedure,
+  ultraProcedure,
+  canEditRecord,
+} from "~/server/api/trpc";
 import { sales, groups, seedTypes } from "~/server/db/schema";
+import { getSeedPriceByRole, calculateTotalPrice } from "~/lib/pricing";
 
 export const saleRouter = createTRPCRouter({
-  // Create a new sale
-  create: publicProcedure
+  // Create a new sale - only Ijo and above can create
+  create: ijoProcedure
     .input(
       z.object({
         groupId: z.number(),
         seedTypeId: z.number(),
         seedsSold: z.number().positive(),
-        pricePerSeed: z.number().min(0).optional(),
-        totalPrice: z.number().min(0).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       try {
+        // Get price based on user role
+        const pricePerSeed = getSeedPriceByRole(ctx.user.role as any);
+        const totalPrice = calculateTotalPrice(input.seedsSold, pricePerSeed);
+
         return await ctx.db.insert(sales).values({
           ...input,
+          pricePerSeed,
+          totalPrice,
+          userId: ctx.user.id, // Track who created this
         });
       } catch (error) {
         // Check if the error is from our weekly limit trigger
@@ -26,14 +39,18 @@ export const saleRouter = createTRPCRouter({
           error instanceof Error &&
           error.message.includes("Insufficient limit")
         ) {
-          throw new Error(error.message);
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message,
+          });
         }
         throw error;
       }
     }),
 
   // Get all sales with group information (with pagination support)
-  getAll: publicProcedure
+  // Ijo users can only see their own sales
+  getAll: protectedProcedure
     .input(
       z
         .object({
@@ -45,10 +62,15 @@ export const saleRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { limit = 10, offset = 0 } = input ?? {};
 
+      // Build where condition based on role
+      const whereCondition =
+        ctx.user.role === "Ijo" ? eq(sales.userId, ctx.user.id) : undefined;
+
       // Get total count
       const totalCountResult = await ctx.db
         .select({ count: count() })
-        .from(sales);
+        .from(sales)
+        .where(whereCondition);
       const totalCount = totalCountResult[0]?.count ?? 0;
 
       // Get paginated data
@@ -58,6 +80,7 @@ export const saleRouter = createTRPCRouter({
           seedsSold: sales.seedsSold,
           pricePerSeed: sales.pricePerSeed,
           totalPrice: sales.totalPrice,
+          userId: sales.userId,
           createdAt: sales.createdAt,
           updatedAt: sales.updatedAt,
           group: {
@@ -72,6 +95,7 @@ export const saleRouter = createTRPCRouter({
         .from(sales)
         .innerJoin(groups, eq(sales.groupId, groups.id))
         .innerJoin(seedTypes, eq(sales.seedTypeId, seedTypes.id))
+        .where(whereCondition)
         .orderBy(desc(sales.createdAt))
         .limit(limit)
         .offset(offset);
@@ -83,51 +107,94 @@ export const saleRouter = createTRPCRouter({
       };
     }),
 
-  // Get sales by group ID
-  getByGroupId: publicProcedure
+  // Get sales by group ID - protected
+  getByGroupId: protectedProcedure
     .input(z.object({ groupId: z.number() }))
     .query(async ({ ctx, input }) => {
+      const whereCondition =
+        ctx.user.role === "Ijo"
+          ? and(eq(sales.groupId, input.groupId), eq(sales.userId, ctx.user.id))
+          : eq(sales.groupId, input.groupId);
+
       return ctx.db
         .select()
         .from(sales)
-        .where(eq(sales.groupId, input.groupId))
+        .where(whereCondition)
         .orderBy(desc(sales.createdAt));
     }),
 
-  // Get total seeds sold
-  getTotalSold: publicProcedure.query(async ({ ctx }) => {
+  // Get total seeds sold - protected
+  getTotalSold: protectedProcedure.query(async ({ ctx }) => {
+    const whereCondition =
+      ctx.user.role === "Ijo" ? eq(sales.userId, ctx.user.id) : undefined;
+
     const result = await ctx.db
       .select({
         total: sql<number>`sum(${sales.seedsSold})`,
       })
-      .from(sales);
+      .from(sales)
+      .where(whereCondition);
 
     return result[0]?.total ?? 0;
   }),
 
   // Update a sale by ID
-  update: publicProcedure
+  // Ijo users can only update their own sales
+  // Ultra and Raden can update any sale
+  update: ijoProcedure
     .input(
       z.object({
         id: z.number(),
         groupId: z.number(),
         seedTypeId: z.number(),
         seedsSold: z.number().positive(),
-        pricePerSeed: z.number().min(0).optional(),
-        totalPrice: z.number().min(0).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, ...data } = input;
+      const { id, ...updateData } = input;
+
+      // Check if the sale exists and get its owner
+      const existingSale = await ctx.db
+        .select({ userId: sales.userId })
+        .from(sales)
+        .where(eq(sales.id, id))
+        .limit(1);
+
+      if (!existingSale[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Sale not found",
+        });
+      }
+
+      // Check if user can edit this record
+      if (!canEditRecord(ctx.user.role, ctx.user.id, existingSale[0].userId)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only edit your own sales",
+        });
+      }
+
+      // Recalculate price based on user role
+      const pricePerSeed = getSeedPriceByRole(ctx.user.role as any);
+      const totalPrice = calculateTotalPrice(
+        updateData.seedsSold,
+        pricePerSeed,
+      );
+
       return await ctx.db
         .update(sales)
-        .set(data)
+        .set({
+          ...updateData,
+          pricePerSeed,
+          totalPrice,
+        })
         .where(eq(sales.id, id))
         .returning();
     }),
 
-  // Delete a sale by ID
-  delete: publicProcedure
+  // Delete a sale by ID - only Ultra and Raden can delete
+  delete: ultraProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       return await ctx.db.delete(sales).where(eq(sales.id, input.id));

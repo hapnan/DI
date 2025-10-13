@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  ultraProcedure,
+} from "~/server/api/trpc";
 import { sql } from "drizzle-orm";
 
 type WeeklyLimit = {
@@ -13,16 +17,8 @@ type WeeklyLimit = {
 };
 
 export const weeklyLimitRouter = createTRPCRouter({
-  // Get current week's limit for a group
-  // getCurrentLimit: publicProcedure
-  //   .input(z.object({ groupId: z.number() }))
-  //   .query(async ({ ctx, input }) => {
-  //       const result = await ctx.db.execute(
-  //       sql`SELECT * FROM get_or_create_weekly_limit(${input.groupId}, CURRENT_DATE)`,
-  //     );
-  //   }),
-
-  getCurrentLimit: publicProcedure
+  // Get current week's limit for a group - all authenticated users
+  getCurrentLimit: protectedProcedure
     .input(z.object({ groupId: z.number() }))
     .query(async ({ ctx, input }) => {
       const result = await ctx.db.execute(
@@ -32,8 +28,8 @@ export const weeklyLimitRouter = createTRPCRouter({
       return rows[0];
     }),
 
-  // Get all groups' current limits
-  getAllCurrentLimits: publicProcedure.query(async ({ ctx }) => {
+  // Get all groups' current limits - all authenticated users
+  getAllCurrentLimits: protectedProcedure.query(async ({ ctx }) => {
     const result = await ctx.db.execute(sql`
       SELECT 
         g.id as "groupId",
@@ -46,16 +42,16 @@ export const weeklyLimitRouter = createTRPCRouter({
     return result.rows;
   }),
 
-  // Manually trigger rollover for all groups
-  rolloverAllLimits: publicProcedure.mutation(async ({ ctx }) => {
+  // Manually trigger rollover for all groups - only Ultra and Raden
+  rolloverAllLimits: ultraProcedure.mutation(async ({ ctx }) => {
     const result = await ctx.db.execute(
       sql`SELECT * FROM rollover_weekly_limits()`,
     );
     return result.rows;
   }),
 
-  // Get limit history for a group
-  getLimitHistory: publicProcedure
+  // Get limit history for a group - all authenticated users
+  getLimitHistory: protectedProcedure
     .input(z.object({ groupId: z.number() }))
     .query(async ({ ctx, input }) => {
       const result = await ctx.db.execute(sql`

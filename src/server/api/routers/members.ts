@@ -1,16 +1,21 @@
 import { z } from "zod";
 import { eq, desc, sql } from "drizzle-orm";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  ijoProcedure,
+  ultraProcedure,
+} from "~/server/api/trpc";
 import { members } from "~/server/db/schema";
 
 export const membersRouter = createTRPCRouter({
-  // Get all members
-  getAll: publicProcedure.query(async ({ ctx }) => {
+  // Get all members - all authenticated users can view
+  getAll: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.select().from(members).orderBy(desc(members.createdAt));
   }),
 
-  // Create a new member
-  create: publicProcedure
+  // Create a new member - only Ijo and above
+  create: ijoProcedure
     .input(
       z.object({
         name: z.string().min(2).max(100),
@@ -21,22 +26,22 @@ export const membersRouter = createTRPCRouter({
       return ctx.db.insert(members).values(input).returning();
     }),
 
-  // Delete a member by ID
-  delete: publicProcedure
+  // Delete a member by ID - only Ultra and Raden
+  delete: ultraProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.delete(members).where(eq(members.id, input.id));
     }),
 
-  // Get member by ID
-  getById: publicProcedure
+  // Get member by ID - all authenticated users
+  getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       return ctx.db.select().from(members).where(eq(members.id, input.id));
     }),
 
-  // Update member by ID
-  update: publicProcedure
+  // Update member by ID - only Ultra and Raden
+  update: ultraProcedure
     .input(
       z.object({
         id: z.number(),
@@ -47,8 +52,8 @@ export const membersRouter = createTRPCRouter({
       return ctx.db.update(members).set(input).where(eq(members.id, input.id));
     }),
 
-  // Get total number of members
-  getTotalCount: publicProcedure.query(async ({ ctx }) => {
+  // Get total number of members - all authenticated users
+  getTotalCount: protectedProcedure.query(async ({ ctx }) => {
     const result = await ctx.db
       .select({
         count: sql`COUNT(*)`.as("count"),

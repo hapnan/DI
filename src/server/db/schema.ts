@@ -11,6 +11,101 @@ import { index, pgTableCreator, uniqueIndex } from "drizzle-orm/pg-core";
  */
 export const createTable = pgTableCreator((name) => `DI_${name}`);
 
+// ======================================
+// Auth Tables (better-auth)
+// ======================================
+
+// User table with role field for RBAC
+export const users = createTable(
+  "user",
+  (d) => ({
+    id: d.text().primaryKey(),
+    name: d.text().notNull(),
+    email: d.text().notNull().unique(),
+    emailVerified: d.boolean("email_verified").default(false).notNull(),
+    image: d.text(),
+    role: d.text().notNull().default("Abu"), // Raden, Ultra, Ijo, Abu
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d
+      .timestamp({ withTimezone: true })
+      .$onUpdate(() => new Date())
+      .notNull(),
+  }),
+  (t) => [
+    index("user_email_idx").on(t.email),
+    index("user_role_idx").on(t.role),
+  ],
+);
+
+// Session table for better-auth
+export const sessions = createTable(
+  "session",
+  (d) => ({
+    id: d.text().primaryKey(),
+    expiresAt: d.timestamp({ withTimezone: true }).notNull(),
+    token: d.text().notNull().unique(),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d
+      .timestamp({ withTimezone: true })
+      .$onUpdate(() => new Date())
+      .notNull(),
+    ipAddress: d.text("ip_address"),
+    userAgent: d.text("user_agent"),
+    userId: d
+      .text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+  }),
+  (t) => [
+    index("session_token_idx").on(t.token),
+    index("session_user_idx").on(t.userId),
+  ],
+);
+
+// Account table for auth providers (email/password)
+export const accounts = createTable(
+  "account",
+  (d) => ({
+    id: d.text().primaryKey(),
+    accountId: d.text("account_id").notNull(),
+    providerId: d.text("provider_id").notNull(),
+    userId: d
+      .text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accessToken: d.text("access_token"),
+    refreshToken: d.text("refresh_token"),
+    idToken: d.text("id_token"),
+    accessTokenExpiresAt: d.timestamp("access_token_expires_at", {
+      withTimezone: true,
+    }),
+    refreshTokenExpiresAt: d.timestamp("refresh_token_expires_at", {
+      withTimezone: true,
+    }),
+    scope: d.text(),
+    password: d.text(),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d
+      .timestamp({ withTimezone: true })
+      .$onUpdate(() => new Date())
+      .notNull(),
+  }),
+  (t) => [index("account_user_idx").on(t.userId)],
+);
+
+// ======================================
+// Application Tables
+// ======================================
+
 // Table for seed types
 export const seedTypes = createTable(
   "seed_type",
@@ -84,6 +179,10 @@ export const sales = createTable(
     seedsSold: d.integer().notNull(),
     pricePerSeed: d.integer().default(700),
     totalPrice: d.integer(),
+    userId: d
+      .text("user_id")
+      .references(() => users.id)
+      .notNull(), // Track who created this sale
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
@@ -93,6 +192,7 @@ export const sales = createTable(
   (t) => [
     index("sale_group_idx").on(t.groupId),
     index("sale_seed_type_idx").on(t.seedTypeId),
+    index("sale_user_idx").on(t.userId),
     index("sale_created_at_idx").on(t.createdAt),
   ],
 );
@@ -113,6 +213,10 @@ export const leafPurchases = createTable(
     leavesPurchased: d.integer().notNull(),
     totalCost: d.integer().default(0),
     costPerLeaf: d.integer().default(200),
+    userId: d
+      .text("user_id")
+      .references(() => users.id)
+      .notNull(), // Track who created this purchase
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
@@ -122,6 +226,7 @@ export const leafPurchases = createTable(
   (t) => [
     index("leaf_purchase_group_idx").on(t.groupId),
     index("leaf_purchase_leaf_type_idx").on(t.leafTypeId),
+    index("leaf_purchase_user_idx").on(t.userId),
     index("leaf_purchase_created_at_idx").on(t.createdAt),
   ],
 );
@@ -203,6 +308,10 @@ export const internalSeedSale = createTable(
     seedsSold: d.integer().notNull(),
     pricePerSeed: d.integer().default(700),
     totalPrice: d.integer(),
+    userId: d
+      .text("user_id")
+      .references(() => users.id)
+      .notNull(), // Track who created this sale
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
@@ -212,6 +321,7 @@ export const internalSeedSale = createTable(
   (t) => [
     index("internal_seed_sale_member_idx").on(t.memberId),
     index("internal_seed_sale_seed_type_idx").on(t.seedTypeId),
+    index("internal_seed_sale_user_idx").on(t.userId),
   ],
 );
 
@@ -230,6 +340,10 @@ export const internalLeafPurchase = createTable(
     leavesPurchased: d.integer().notNull(),
     totalCost: d.integer().default(0),
     costPerLeaf: d.integer().default(200),
+    userId: d
+      .text("user_id")
+      .references(() => users.id)
+      .notNull(), // Track who created this purchase
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
@@ -239,5 +353,6 @@ export const internalLeafPurchase = createTable(
   (t) => [
     index("internal_leaf_purchase_member_idx").on(t.memberId),
     index("internal_leaf_purchase_leaf_type_idx").on(t.leafTypeId),
+    index("internal_leaf_purchase_user_idx").on(t.userId),
   ],
 );

@@ -41,12 +41,14 @@ import {
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useSession } from "~/lib/auth-client";
 
 type LeafPurchaseData = {
   id: number;
   leavesPurchased: number;
   costPerLeaf: number | null;
   totalCost: number | null;
+  userId?: string;
   group: {
     id: number;
     name: string;
@@ -64,12 +66,26 @@ export function LeafPurchaseActions({
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || "Abu";
+  const userId = session?.user?.id;
+
   const [formData, setFormData] = useState({
     groupId: purchase.group.id.toString(),
     leafTypeId: purchase.leafType.id.toString(),
     leavesPurchased: purchase.leavesPurchased.toString(),
-    costPerLeaf: (purchase.costPerLeaf ?? 200).toString(),
   });
+
+  // Check permissions
+  const canEdit = () => {
+    if (userRole === "Abu") return false;
+    if (userRole === "Ijo") return purchase.userId === userId;
+    return true;
+  };
+
+  const canDelete = () => {
+    return userRole === "Ultra" || userRole === "Raden";
+  };
 
   const utils = api.useUtils();
   const { data: groups } = api.group.getAll.useQuery();
@@ -98,21 +114,21 @@ export function LeafPurchaseActions({
   });
 
   const handleUpdate = () => {
-    const totalCost =
-      Number(formData.leavesPurchased) * Number(formData.costPerLeaf);
     updatePurchase.mutate({
       id: purchase.id,
       groupId: Number(formData.groupId),
       leafTypeId: Number(formData.leafTypeId),
       leavesPurchased: Number(formData.leavesPurchased),
-      costPerLeaf: Number(formData.costPerLeaf),
-      totalCost,
     });
   };
 
   const handleDelete = () => {
     deletePurchase.mutate({ id: purchase.id });
   };
+
+  if (!canEdit() && !canDelete()) {
+    return null;
+  }
 
   return (
     <>
@@ -133,17 +149,21 @@ export function LeafPurchaseActions({
             Copy Purchase ID
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setEditOpen(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Edit Purchase
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="text-red-600"
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Purchase
-          </DropdownMenuItem>
+          {canEdit() && (
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Purchase
+            </DropdownMenuItem>
+          )}
+          {canDelete() && (
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Purchase
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -212,28 +232,11 @@ export function LeafPurchaseActions({
                 }
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="costPerLeaf">Cost per Leaf</Label>
-              <Input
-                id="costPerLeaf"
-                type="number"
-                value={formData.costPerLeaf}
-                onChange={(e) =>
-                  setFormData({ ...formData, costPerLeaf: e.target.value })
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Total Cost</Label>
-              <Input
-                type="number"
-                value={
-                  Number(formData.leavesPurchased) *
-                  Number(formData.costPerLeaf)
-                }
-                readOnly
-                className="bg-muted"
-              />
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Pricing is automatically calculated based
+                on your role. You cannot manually set the price.
+              </p>
             </div>
           </div>
           <DialogFooter>

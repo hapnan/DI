@@ -11,6 +11,7 @@ export type LeafPurchaseData = {
   leavesPurchased: number;
   costPerLeaf: number | null;
   totalCost: number | null;
+  userId: string;
   createdAt: Date;
   member: {
     id: number;
