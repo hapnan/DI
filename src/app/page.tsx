@@ -112,7 +112,7 @@ export default async function Home() {
               </CardHeader>
               <CardContent>
                 <Button asChild variant="outline" className="w-full">
-                  <Link href="/sales-input">Old Form</Link>
+                  <Link href="/sales-input">Input Form</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -148,7 +148,7 @@ export default async function Home() {
               </CardHeader>
               <CardContent>
                 <Button asChild variant="outline" className="w-full">
-                  <Link href="/leaf-purchase-input">Old Form</Link>
+                  <Link href="/leaf-purchase-input">Input Form</Link>
                 </Button>
               </CardContent>
             </Card>
