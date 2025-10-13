@@ -51,6 +51,10 @@ type InternalSaleData = {
     id: number;
     name: string;
   };
+  seedType: {
+    id: number;
+    name: string;
+  };
 };
 
 export function InternalSaleActions({ sale }: { sale: InternalSaleData }) {
@@ -58,12 +62,14 @@ export function InternalSaleActions({ sale }: { sale: InternalSaleData }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [formData, setFormData] = useState({
     memberId: sale.member.id.toString(),
+    seedTypeId: sale.seedType.id.toString(),
     seedsSold: sale.seedsSold.toString(),
     pricePerSeed: (sale.pricePerSeed ?? 700).toString(),
   });
 
   const utils = api.useUtils();
   const { data: members } = api.group.getAll.useQuery(); // Using groups as members
+  const { data: seedTypes } = api.seedType.getAll.useQuery();
 
   const updateSale = api.internalSeed.update.useMutation({
     onSuccess: () => {
@@ -93,6 +99,7 @@ export function InternalSaleActions({ sale }: { sale: InternalSaleData }) {
     updateSale.mutate({
       id: sale.id,
       memberId: Number(formData.memberId),
+      seedTypeId: Number(formData.seedTypeId),
       seedsSold: Number(formData.seedsSold),
       pricePerSeed: Number(formData.pricePerSeed),
       totalPrice,
@@ -160,6 +167,29 @@ export function InternalSaleActions({ sale }: { sale: InternalSaleData }) {
                   {members?.map((member) => (
                     <SelectItem key={member.id} value={member.id.toString()}>
                       {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="seedType">Seed Type</Label>
+              <Select
+                value={formData.seedTypeId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, seedTypeId: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {seedTypes?.map((seedType) => (
+                    <SelectItem
+                      key={seedType.id}
+                      value={seedType.id.toString()}
+                    >
+                      {seedType.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

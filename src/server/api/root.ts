@@ -7,6 +7,8 @@ import { weeklyLimitRouter } from "~/server/api/routers/weeklyLimit";
 import { internalSeedRouter } from "~/server/api/routers/internalSeed";
 import { membersRouter } from "~/server/api/routers/members";
 import { internalLeafRouter } from "~/server/api/routers/internalLeaf";
+import { seedTypeRouter } from "~/server/api/routers/seedType";
+import { leafTypeRouter } from "~/server/api/routers/leafType";
 
 /**
  * This is the primary router for your server.
@@ -22,6 +24,8 @@ export const appRouter = createTRPCRouter({
   internalSeed: internalSeedRouter,
   members: membersRouter,
   internalLeaf: internalLeafRouter,
+  seedType: seedTypeRouter,
+  leafType: leafTypeRouter,
 });
 
 // export type definition of API

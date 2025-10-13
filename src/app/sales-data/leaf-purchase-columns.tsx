@@ -16,6 +16,10 @@ export type LeafPurchaseData = {
     id: number;
     name: string;
   };
+  leafType: {
+    id: number;
+    name: string;
+  };
 };
 
 export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
@@ -39,6 +43,22 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
       );
     },
     cell: ({ row }) => <div>{row.original.group.name}</div>,
+  },
+  {
+    id: "leafTypeName",
+    accessorKey: "leafType.name",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Leaf Type
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => <div>{row.original.leafType.name}</div>,
   },
   {
     accessorKey: "costPerLeaf",

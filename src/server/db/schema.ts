@@ -11,6 +11,47 @@ import { index, pgTableCreator, uniqueIndex } from "drizzle-orm/pg-core";
  */
 export const createTable = pgTableCreator((name) => `DI_${name}`);
 
+// Table for seed types
+export const seedTypes = createTable(
+  "seed_type",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    name: d.varchar({ length: 100 }).notNull().unique(),
+    description: d.varchar({ length: 500 }),
+    defaultPricePerSeed: d.integer().default(700),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+  }),
+  (t) => [index("seed_type_name_idx").on(t.name)],
+);
+
+// Table for leaf types (marijuana from cannabis, cocaine from coca)
+export const leafTypes = createTable(
+  "leaf_type",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    name: d.varchar({ length: 100 }).notNull().unique(),
+    description: d.varchar({ length: 500 }),
+    seedTypeId: d
+      .integer()
+      .references(() => seedTypes.id)
+      .notNull(),
+    defaultPricePerLeaf: d.integer().default(200),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+  }),
+  (t) => [
+    index("leaf_type_name_idx").on(t.name),
+    index("leaf_type_seed_type_idx").on(t.seedTypeId),
+  ],
+);
+
 // Table for seed groups
 export const groups = createTable(
   "group",
@@ -36,6 +77,10 @@ export const sales = createTable(
       .integer()
       .references(() => groups.id)
       .notNull(),
+    seedTypeId: d
+      .integer()
+      .references(() => seedTypes.id)
+      .notNull(),
     seedsSold: d.integer().notNull(),
     pricePerSeed: d.integer().default(700),
     totalPrice: d.integer(),
@@ -47,6 +92,7 @@ export const sales = createTable(
   }),
   (t) => [
     index("sale_group_idx").on(t.groupId),
+    index("sale_seed_type_idx").on(t.seedTypeId),
     index("sale_created_at_idx").on(t.createdAt),
   ],
 );
@@ -60,6 +106,10 @@ export const leafPurchases = createTable(
       .integer()
       .references(() => groups.id)
       .notNull(),
+    leafTypeId: d
+      .integer()
+      .references(() => leafTypes.id)
+      .notNull(),
     leavesPurchased: d.integer().notNull(),
     totalCost: d.integer().default(0),
     costPerLeaf: d.integer().default(200),
@@ -71,6 +121,7 @@ export const leafPurchases = createTable(
   }),
   (t) => [
     index("leaf_purchase_group_idx").on(t.groupId),
+    index("leaf_purchase_leaf_type_idx").on(t.leafTypeId),
     index("leaf_purchase_created_at_idx").on(t.createdAt),
   ],
 );
@@ -145,6 +196,10 @@ export const internalSeedSale = createTable(
       .integer()
       .references(() => members.id)
       .notNull(),
+    seedTypeId: d
+      .integer()
+      .references(() => seedTypes.id)
+      .notNull(),
     seedsSold: d.integer().notNull(),
     pricePerSeed: d.integer().default(700),
     totalPrice: d.integer(),
@@ -154,7 +209,10 @@ export const internalSeedSale = createTable(
       .notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
   }),
-  (t) => [index("internal_seed_sale_member_idx").on(t.memberId)],
+  (t) => [
+    index("internal_seed_sale_member_idx").on(t.memberId),
+    index("internal_seed_sale_seed_type_idx").on(t.seedTypeId),
+  ],
 );
 
 export const internalLeafPurchase = createTable(
@@ -165,6 +223,10 @@ export const internalLeafPurchase = createTable(
       .integer()
       .references(() => members.id)
       .notNull(),
+    leafTypeId: d
+      .integer()
+      .references(() => leafTypes.id)
+      .notNull(),
     leavesPurchased: d.integer().notNull(),
     totalCost: d.integer().default(0),
     costPerLeaf: d.integer().default(200),
@@ -174,5 +236,8 @@ export const internalLeafPurchase = createTable(
       .notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
   }),
-  (t) => [index("internal_leaf_purchase_member_idx").on(t.memberId)],
+  (t) => [
+    index("internal_leaf_purchase_member_idx").on(t.memberId),
+    index("internal_leaf_purchase_leaf_type_idx").on(t.leafTypeId),
+  ],
 );

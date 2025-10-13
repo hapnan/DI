@@ -1,5 +1,5 @@
 "use client";
-
+import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -37,8 +37,9 @@ import { api } from "~/trpc/react";
 
 const formSchema = z.object({
   groupId: z.string().min(1, "Please select a group"),
+  seedTypeId: z.string().min(1, "Please select a seed type"),
   seedsSold: z.string().min(1, "Please enter number of seeds sold"),
-  pricePerSeed: z.string().min(1, "Please enter price per seed").optional(),
+  pricePerSeed: z.string().min(1, "Please enter price per seed"),
   totalPrice: z.string().min(1, "Please enter total price"),
 });
 
@@ -54,15 +55,32 @@ export default function SalesInputPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       groupId: "",
+      seedTypeId: "1",
       seedsSold: "",
       pricePerSeed: "700",
       totalPrice: "",
     },
   });
 
+  const watchPricePerSeed = form.watch("pricePerSeed");
+  const watchSeedsSold = form.watch("seedsSold");
+
+  React.useEffect(() => {
+    if (watchSeedsSold && watchPricePerSeed) {
+      const total = Number(watchPricePerSeed) * Number(watchSeedsSold);
+      if (!isNaN(total)) {
+        form.setValue("totalPrice", total.toString());
+      }
+    }
+  }, [watchSeedsSold, watchPricePerSeed, form]);
+
   // Get all groups for the select dropdown
   const { data: groups, isLoading: groupsLoading } =
     api.group.getAll.useQuery();
+
+  // Get all seed types for the select dropdown
+  const { data: seedTypes, isLoading: seedTypesLoading } =
+    api.seedType.getAll.useQuery();
 
   // Mutation for creating a sale
   const createSale = api.sale.create.useMutation({
@@ -82,6 +100,7 @@ export default function SalesInputPage() {
     try {
       await createSale.mutateAsync({
         groupId: parseInt(values.groupId),
+        seedTypeId: parseInt(values.seedTypeId),
         seedsSold: parseInt(values.seedsSold),
         totalPrice: parseInt(values.totalPrice),
         pricePerSeed:
@@ -155,6 +174,46 @@ export default function SalesInputPage() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="seedTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seed Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select seed type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {seedTypesLoading ? (
+                          <div className="p-2">
+                            <InlineLoading text="Loading seed types..." />
+                          </div>
+                        ) : seedTypes?.length === 0 ? (
+                          <SelectItem value="no-seed-types" disabled>
+                            No seed types available
+                          </SelectItem>
+                        ) : (
+                          seedTypes?.map((seedType) => (
+                            <SelectItem
+                              key={seedType.id}
+                              value={seedType.id.toString()}
+                            >
+                              {seedType.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               {weeklyLimits && (
                 <div className="rounded-md border p-4">
                   <p className="text-sm">
@@ -184,6 +243,24 @@ export default function SalesInputPage() {
               />
               <FormField
                 control={form.control}
+                name="pricePerSeed"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price per Seed</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Enter price per seed"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="totalPrice"
                 render={({ field }) => (
                   <FormItem>
@@ -194,6 +271,7 @@ export default function SalesInputPage() {
                         min="0"
                         placeholder="Enter total price"
                         {...field}
+                        readOnly
                       />
                     </FormControl>
                     <FormMessage />

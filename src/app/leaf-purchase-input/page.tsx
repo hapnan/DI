@@ -38,6 +38,7 @@ import { MdArrowBackIosNew } from "react-icons/md";
 
 const formSchema = z.object({
   groupId: z.string().min(1, "Please select a group"),
+  leafTypeId: z.string().min(1, "Please select a leaf type"),
   leavesPurchased: z.string().min(1, "Please enter number of leaves purchased"),
   costPerLeaf: z.string().optional(),
   totalCost: z.string().min(1, "Please enter total cost"),
@@ -51,6 +52,7 @@ export default function LeafPurchaseInputPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       groupId: "",
+      leafTypeId: "1",
       leavesPurchased: "",
       totalCost: "",
     },
@@ -59,6 +61,10 @@ export default function LeafPurchaseInputPage() {
   // Get all groups for the select dropdown
   const { data: groups, isLoading: groupsLoading } =
     api.group.getAll.useQuery();
+
+  // Get all leaf types for the select dropdown
+  const { data: leafTypes, isLoading: leafTypesLoading } =
+    api.leafType.getAll.useQuery();
 
   // Mutation for creating a leaf purchase
   const createLeafPurchase = api.leafPurchase.create.useMutation({
@@ -78,6 +84,7 @@ export default function LeafPurchaseInputPage() {
     try {
       await createLeafPurchase.mutateAsync({
         groupId: parseInt(values.groupId),
+        leafTypeId: parseInt(values.leafTypeId),
         leavesPurchased: parseInt(values.leavesPurchased),
         totalCost: parseInt(values.totalCost),
         costPerLeaf: Math.round(
@@ -138,6 +145,46 @@ export default function LeafPurchaseInputPage() {
                               value={group.id.toString()}
                             >
                               {group.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="leafTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Leaf Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select leaf type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {leafTypesLoading ? (
+                          <div className="p-2">
+                            <InlineLoading text="Loading leaf types..." />
+                          </div>
+                        ) : leafTypes?.length === 0 ? (
+                          <SelectItem value="no-leaf-types" disabled>
+                            No leaf types available
+                          </SelectItem>
+                        ) : (
+                          leafTypes?.map((leafType) => (
+                            <SelectItem
+                              key={leafType.id}
+                              value={leafType.id.toString()}
+                            >
+                              {leafType.name}
                             </SelectItem>
                           ))
                         )}

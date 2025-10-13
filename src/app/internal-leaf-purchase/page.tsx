@@ -37,6 +37,7 @@ import { MdArrowBackIosNew } from "react-icons/md";
 
 const leafPurchaseSchema = z.object({
   memberId: z.string().min(1, "Please select a member"),
+  leafTypeId: z.string().min(1, "Please select a leaf type"),
   leavesPurchased: z
     .string()
     .min(1, "Leaves purchased is required")
@@ -58,6 +59,10 @@ export default function LeafPurchaseInputPage() {
   const { data: members, isLoading: membersLoading } =
     api.members.getAll.useQuery();
 
+  // Fetch all leaf types
+  const { data: leafTypes, isLoading: leafTypesLoading } =
+    api.leafType.getAll.useQuery();
+
   // Create leaf purchase mutation
   const createLeafPurchase = api.internalLeaf.create.useMutation({
     onSuccess: () => {
@@ -75,6 +80,7 @@ export default function LeafPurchaseInputPage() {
     resolver: zodResolver(leafPurchaseSchema),
     defaultValues: {
       memberId: "",
+      leafTypeId: "1",
       leavesPurchased: "",
       costPerLeaf: "200",
       totalCost: "",
@@ -97,6 +103,7 @@ export default function LeafPurchaseInputPage() {
   function onSubmit(values: LeafPurchaseFormValues) {
     createLeafPurchase.mutate({
       memberId: Number(values.memberId),
+      leafTypeId: Number(values.leafTypeId),
       leavesPurchased: Number(values.leavesPurchased),
       costPerLeaf: values.costPerLeaf ? Number(values.costPerLeaf) : 200,
       totalCost: values.totalCost ? Number(values.totalCost) : 0,
@@ -151,6 +158,41 @@ export default function LeafPurchaseInputPage() {
                     </Select>
                     <FormDescription>
                       Select the member selling leaves
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="leafTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Leaf Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={leafTypesLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select leaf type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {leafTypes?.map((leafType) => (
+                          <SelectItem
+                            key={leafType.id}
+                            value={leafType.id.toString()}
+                          >
+                            {leafType.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Select the type of leaf being purchased
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

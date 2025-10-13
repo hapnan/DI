@@ -16,6 +16,10 @@ export type SaleData = {
     id: number;
     name: string;
   };
+  seedType: {
+    id: number;
+    name: string;
+  };
 };
 
 export const salesColumns: ColumnDef<SaleData>[] = [
@@ -39,6 +43,22 @@ export const salesColumns: ColumnDef<SaleData>[] = [
       );
     },
     cell: ({ row }) => <div>{row.original.group.name}</div>,
+  },
+  {
+    id: "seedTypeName",
+    accessorKey: "seedType.name",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Seed Type
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => <div>{row.original.seedType.name}</div>,
   },
   {
     accessorKey: "pricePerSeed",

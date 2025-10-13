@@ -78,7 +78,7 @@ export default function SalesDataPage() {
           </Link>
         </Button>
       </div>
-      <div className="flex flex-col gap-3">
+      <div className="mt-3 flex flex-col gap-3">
         <Card className="min-h-96">
           <CardHeader>
             <CardTitle>Sales & Purchase Data</CardTitle>

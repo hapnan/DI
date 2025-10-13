@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { eq, desc, sql, count } from "drizzle-orm";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { sales, groups } from "~/server/db/schema";
+import { sales, groups, seedTypes } from "~/server/db/schema";
 
 export const saleRouter = createTRPCRouter({
   // Create a new sale
@@ -9,6 +9,7 @@ export const saleRouter = createTRPCRouter({
     .input(
       z.object({
         groupId: z.number(),
+        seedTypeId: z.number(),
         seedsSold: z.number().positive(),
         pricePerSeed: z.number().min(0).optional(),
         totalPrice: z.number().min(0).optional(),
@@ -63,9 +64,14 @@ export const saleRouter = createTRPCRouter({
             id: groups.id,
             name: groups.name,
           },
+          seedType: {
+            id: seedTypes.id,
+            name: seedTypes.name,
+          },
         })
         .from(sales)
         .innerJoin(groups, eq(sales.groupId, groups.id))
+        .innerJoin(seedTypes, eq(sales.seedTypeId, seedTypes.id))
         .orderBy(desc(sales.createdAt))
         .limit(limit)
         .offset(offset);
@@ -105,6 +111,7 @@ export const saleRouter = createTRPCRouter({
       z.object({
         id: z.number(),
         groupId: z.number(),
+        seedTypeId: z.number(),
         seedsSold: z.number().positive(),
         pricePerSeed: z.number().min(0).optional(),
         totalPrice: z.number().min(0).optional(),

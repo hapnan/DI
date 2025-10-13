@@ -37,6 +37,7 @@ import { Loader2 } from "lucide-react";
 
 const seedSalesSchema = z.object({
   memberId: z.string().min(1, "Please select a member"),
+  seedTypeId: z.string().min(1, "Please select a seed type"),
   seedsSold: z
     .string()
     .min(1, "Seeds sold is required")
@@ -58,6 +59,10 @@ export default function SeedSalesInputPage() {
   const { data: members, isLoading: membersLoading } =
     api.members.getAll.useQuery();
 
+  // Fetch all seed types
+  const { data: seedTypes, isLoading: seedTypesLoading } =
+    api.seedType.getAll.useQuery();
+
   // Create sale mutation
   const createSale = api.internalSeed.create.useMutation({
     onSuccess: () => {
@@ -75,6 +80,7 @@ export default function SeedSalesInputPage() {
     resolver: zodResolver(seedSalesSchema),
     defaultValues: {
       memberId: "",
+      seedTypeId: "1",
       seedsSold: "",
       totalPrice: "",
       pricePerSeed: "700",
@@ -82,21 +88,22 @@ export default function SeedSalesInputPage() {
   });
 
   // Calculate total price when seeds sold or price per seed changes
-  const watchTotalPrice = form.watch("totalPrice");
+  const watchPricePerSeed = form.watch("pricePerSeed");
   const watchSeedsSold = form.watch("seedsSold");
 
   React.useEffect(() => {
-    if (watchSeedsSold && watchTotalPrice) {
-      const total = Number(watchTotalPrice) / Number(watchSeedsSold);
+    if (watchSeedsSold && watchPricePerSeed) {
+      const total = Number(watchPricePerSeed) * Number(watchSeedsSold);
       if (!isNaN(total)) {
-        form.setValue("pricePerSeed", total.toString());
+        form.setValue("totalPrice", total.toString());
       }
     }
-  }, [watchSeedsSold, watchTotalPrice, form]);
+  }, [watchSeedsSold, watchPricePerSeed, form]);
 
   function onSubmit(values: SeedSalesFormValues) {
     createSale.mutate({
       memberId: parseInt(values.memberId),
+      seedTypeId: parseInt(values.seedTypeId),
       seedsSold: parseInt(values.seedsSold),
       pricePerSeed: Math.round(
         parseInt(values.totalPrice) / parseInt(values.seedsSold),
@@ -161,6 +168,41 @@ export default function SeedSalesInputPage() {
 
               <FormField
                 control={form.control}
+                name="seedTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seed Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={seedTypesLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select seed type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {seedTypes?.map((seedType) => (
+                          <SelectItem
+                            key={seedType.id}
+                            value={seedType.id.toString()}
+                          >
+                            {seedType.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Select the type of seed being sold
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="seedsSold"
                 render={({ field }) => (
                   <FormItem>
@@ -181,29 +223,6 @@ export default function SeedSalesInputPage() {
               />
               <FormField
                 control={form.control}
-                name="totalPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total Price</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Price"
-                        {...field}
-                        className="bg-muted"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Automatically calculated based on seeds sold and price per
-                      seed
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="pricePerSeed"
                 render={({ field }) => (
                   <FormItem>
@@ -213,7 +232,6 @@ export default function SeedSalesInputPage() {
                         type="number"
                         placeholder="Calculated automatically"
                         {...field}
-                        readOnly
                         className="bg-muted"
                       />
                     </FormControl>
@@ -225,7 +243,29 @@ export default function SeedSalesInputPage() {
                   </FormItem>
                 )}
               />
-
+              <FormField
+                control={form.control}
+                name="totalPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Price</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Price"
+                        {...field}
+                        readOnly
+                        className="bg-muted"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Automatically calculated based on seeds sold and price per
+                      seed
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex gap-4">
                 <Button
                   type="submit"

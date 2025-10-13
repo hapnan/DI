@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { eq, desc, sql } from "drizzle-orm";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { internalSeedSale, members } from "~/server/db/schema";
+import { internalSeedSale, members, seedTypes } from "~/server/db/schema";
 
 export const internalSeedRouter = createTRPCRouter({
   // Get all internal seed sales with member information
@@ -18,9 +18,14 @@ export const internalSeedRouter = createTRPCRouter({
           id: members.id,
           name: members.name,
         },
+        seedType: {
+          id: seedTypes.id,
+          name: seedTypes.name,
+        },
       })
       .from(internalSeedSale)
       .innerJoin(members, eq(internalSeedSale.memberId, members.id))
+      .innerJoin(seedTypes, eq(internalSeedSale.seedTypeId, seedTypes.id))
       .orderBy(desc(internalSeedSale.createdAt));
   }),
 
@@ -29,6 +34,7 @@ export const internalSeedRouter = createTRPCRouter({
     .input(
       z.object({
         memberId: z.number().min(1),
+        seedTypeId: z.number(),
         seedsSold: z.number().min(0),
         pricePerSeed: z.number().min(0).optional(),
         totalPrice: z.number().min(0).optional(),
@@ -67,6 +73,7 @@ export const internalSeedRouter = createTRPCRouter({
       z.object({
         id: z.number(),
         memberId: z.number().min(1),
+        seedTypeId: z.number(),
         seedsSold: z.number().min(0),
         pricePerSeed: z.number().min(0).optional(),
         totalPrice: z.number().min(0).optional(),

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { eq, desc, sql } from "drizzle-orm";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { internalLeafPurchase, members } from "~/server/db/schema";
+import { internalLeafPurchase, members, leafTypes } from "~/server/db/schema";
 
 export const internalLeafRouter = createTRPCRouter({
   // Get all leaf purchases with group information
@@ -18,9 +18,14 @@ export const internalLeafRouter = createTRPCRouter({
           id: members.id,
           name: members.name,
         },
+        leafType: {
+          id: leafTypes.id,
+          name: leafTypes.name,
+        },
       })
       .from(internalLeafPurchase)
       .innerJoin(members, eq(internalLeafPurchase.memberId, members.id))
+      .innerJoin(leafTypes, eq(internalLeafPurchase.leafTypeId, leafTypes.id))
       .orderBy(desc(internalLeafPurchase.createdAt));
   }),
 
@@ -30,6 +35,7 @@ export const internalLeafRouter = createTRPCRouter({
     .input(
       z.object({
         memberId: z.number().min(1),
+        leafTypeId: z.number(),
         leavesPurchased: z.number().min(0),
         costPerLeaf: z.number().min(0).optional(),
         totalCost: z.number().min(0).optional(),
@@ -79,6 +85,7 @@ export const internalLeafRouter = createTRPCRouter({
       z.object({
         id: z.number().min(1),
         memberId: z.number().min(1),
+        leafTypeId: z.number(),
         leavesPurchased: z.number().min(0),
         costPerLeaf: z.number().min(0).optional(),
         totalCost: z.number().min(0).optional(),

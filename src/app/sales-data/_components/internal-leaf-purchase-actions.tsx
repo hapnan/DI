@@ -51,6 +51,10 @@ type InternalLeafPurchaseData = {
     id: number;
     name: string;
   };
+  leafType: {
+    id: number;
+    name: string;
+  };
 };
 
 export function InternalLeafPurchaseActions({
@@ -62,12 +66,14 @@ export function InternalLeafPurchaseActions({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [formData, setFormData] = useState({
     memberId: purchase.member.id.toString(),
+    leafTypeId: purchase.leafType.id.toString(),
     leavesPurchased: purchase.leavesPurchased.toString(),
     costPerLeaf: (purchase.costPerLeaf ?? 200).toString(),
   });
 
   const utils = api.useUtils();
   const { data: members } = api.group.getAll.useQuery(); // Using groups as members
+  const { data: leafTypes } = api.leafType.getAll.useQuery();
 
   const updatePurchase = api.internalLeaf.update.useMutation({
     onSuccess: () => {
@@ -97,6 +103,7 @@ export function InternalLeafPurchaseActions({
     updatePurchase.mutate({
       id: purchase.id,
       memberId: Number(formData.memberId),
+      leafTypeId: Number(formData.leafTypeId),
       leavesPurchased: Number(formData.leavesPurchased),
       costPerLeaf: Number(formData.costPerLeaf),
       totalCost,
@@ -166,6 +173,29 @@ export function InternalLeafPurchaseActions({
                   {members?.map((member) => (
                     <SelectItem key={member.id} value={member.id.toString()}>
                       {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="leafType">Leaf Type</Label>
+              <Select
+                value={formData.leafTypeId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, leafTypeId: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {leafTypes?.map((leafType) => (
+                    <SelectItem
+                      key={leafType.id}
+                      value={leafType.id.toString()}
+                    >
+                      {leafType.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
