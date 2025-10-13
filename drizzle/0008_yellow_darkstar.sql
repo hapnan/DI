@@ -26,15 +26,15 @@ CREATE TABLE "DI_member" (
 	CONSTRAINT "DI_member_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
-ALTER TABLE IF NOT EXISTS "DI_weekly_limits" ALTER COLUMN "id" SET DATA TYPE integer;--> statement-breakpoint
-ALTER TABLE IF NOT EXISTS "DI_weekly_limits" ALTER COLUMN "id" SET DEFAULT nextval('"DI_weekly_limits_id_seq"'::regclass);--> statement-breakpoint
-ALTER TABLE IF NOT EXISTS "DI_weekly_limits" ALTER COLUMN "createdAt" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
-ALTER TABLE IF NOT EXISTS "DI_weekly_limits" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP;--> statement-breakpoint
-ALTER TABLE IF NOT EXISTS "DI_weekly_limits" ALTER COLUMN "updatedAt" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
-ALTER TABLE IF NOT EXISTS "DI_weekly_limits" ALTER COLUMN "updatedAt" DROP DEFAULT;--> statement-breakpoint
-ALTER TABLE IF NOT EXISTS "DI_weekly_limits" ALTER COLUMN "updatedAt" DROP NOT NULL;--> statement-breakpoint
-ALTER TABLE IF NOT EXISTS "DI_internal_leaf_purchase" ADD CONSTRAINT "DI_internal_leaf_purchase_memberId_DI_member_id_fk" FOREIGN KEY ("memberId") REFERENCES "public"."DI_member"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE IF NOT EXISTS "DI_internal_seed_sale" ADD CONSTRAINT "DI_internal_seed_sale_memberId_DI_member_id_fk" FOREIGN KEY ("memberId") REFERENCES "public"."DI_member"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "DI_weekly_limits" ALTER COLUMN "id" SET DATA TYPE integer;--> statement-breakpoint
+ALTER TABLE "DI_weekly_limits" ALTER COLUMN "id" SET DEFAULT nextval('"DI_weekly_limits_id_seq"'::regclass);--> statement-breakpoint
+ALTER TABLE "DI_weekly_limits" ALTER COLUMN "createdAt" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "DI_weekly_limits" ALTER COLUMN "createdAt" SET DEFAULT CURRENT_TIMESTAMP;--> statement-breakpoint
+ALTER TABLE "DI_weekly_limits" ALTER COLUMN "updatedAt" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "DI_weekly_limits" ALTER COLUMN "updatedAt" DROP DEFAULT;--> statement-breakpoint
+ALTER TABLE "DI_weekly_limits" ALTER COLUMN "updatedAt" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "DI_internal_leaf_purchase" ADD CONSTRAINT "DI_internal_leaf_purchase_memberId_DI_member_id_fk" FOREIGN KEY ("memberId") REFERENCES "public"."DI_member"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "DI_internal_seed_sale" ADD CONSTRAINT "DI_internal_seed_sale_memberId_DI_member_id_fk" FOREIGN KEY ("memberId") REFERENCES "public"."DI_member"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "internal_leaf_purchase_member_idx" ON "DI_internal_leaf_purchase" USING btree ("memberId");--> statement-breakpoint
 CREATE INDEX "internal_seed_sale_member_idx" ON "DI_internal_seed_sale" USING btree ("memberId");--> statement-breakpoint
 CREATE INDEX "member_name_idx" ON "DI_member" USING btree ("name");
