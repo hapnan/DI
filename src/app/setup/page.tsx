@@ -12,36 +12,93 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { SectionLoading, ButtonLoading } from "~/components/ui/loading";
 import {
-  InlineLoading,
-  SectionLoading,
-  ButtonLoading,
-} from "~/components/ui/loading";
-
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "~/components/ui/alert-dialog";
 import { api } from "~/trpc/react";
 import { MdArrowBackIosNew } from "react-icons/md";
+import { MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function SetupPage() {
   const [groupName, setGroupName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const [editFormData, setEditFormData] = useState({ name: "" });
+
+  const utils = api.useUtils();
 
   // Get all groups
-  const {
-    data: groups,
-    refetch,
-    isLoading: groupsLoading,
-  } = api.group.getAll.useQuery();
+  const { data: groups, isLoading: groupsLoading } =
+    api.group.getAll.useQuery();
 
   // Create group mutation
   const createGroup = api.group.create.useMutation({
     onSuccess: () => {
       setGroupName("");
       setIsSubmitting(false);
-      void refetch();
+      toast.success("Group created successfully!");
+      void utils.group.getAll.invalidate();
     },
     onError: (error) => {
       console.error("Error creating group:", error);
+      toast.error(error.message || "Failed to create group");
       setIsSubmitting(false);
+    },
+  });
+
+  // Update group mutation
+  const updateGroup = api.group.update.useMutation({
+    onSuccess: () => {
+      toast.success("Group updated successfully!");
+      setEditOpen(false);
+      setSelectedGroup(null);
+      void utils.group.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update group");
+    },
+  });
+
+  // Delete group mutation
+  const deleteGroup = api.group.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Group deleted successfully!");
+      setDeleteOpen(false);
+      setSelectedGroup(null);
+      void utils.group.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete group");
     },
   });
 
@@ -72,11 +129,38 @@ export default function SetupPage() {
       for (const groupName of sampleGroups) {
         await createGroup.mutateAsync({ name: groupName });
       }
+      toast.success("Sample groups created successfully!");
     } catch (error) {
       console.error("Error creating sample groups:", error);
     }
     setIsSubmitting(false);
   };
+
+  function handleEditClick(group: { id: number; name: string }) {
+    setSelectedGroup(group);
+    setEditFormData({ name: group.name });
+    setEditOpen(true);
+  }
+
+  function handleDeleteClick(group: { id: number; name: string }) {
+    setSelectedGroup(group);
+    setDeleteOpen(true);
+  }
+
+  function handleEditSubmit() {
+    if (selectedGroup && editFormData.name.trim()) {
+      updateGroup.mutate({
+        id: selectedGroup.id,
+        name: editFormData.name.trim(),
+      });
+    }
+  }
+
+  function handleDeleteConfirm() {
+    if (selectedGroup) {
+      deleteGroup.mutate({ id: selectedGroup.id });
+    }
+  }
 
   return (
     <div className="container mx-auto max-w-2xl py-8">
@@ -87,7 +171,7 @@ export default function SetupPage() {
           </Link>
         </Button>
       </div>
-      <Card>
+      <Card className="mx-auto mt-3 max-w-2xl">
         <CardHeader>
           <CardTitle>Setup Groups</CardTitle>
           <CardDescription>
@@ -163,10 +247,37 @@ export default function SetupPage() {
                     key={group.id}
                     className="flex items-center justify-between rounded-md bg-gray-50 p-3 dark:bg-gray-800"
                   >
-                    <span>{group.name}</span>
-                    <span className="text-sm text-gray-500 dark:text-gray-200">
-                      ID: {group.id}
-                    </span>
+                    <div className="flex flex-col">
+                      <span>{group.name}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        ID: {group.id}
+                      </span>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleEditClick(group)}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClick(group)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ))}
               </div>
@@ -188,6 +299,76 @@ export default function SetupPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Group</DialogTitle>
+            <DialogDescription>
+              Update the group&apos;s name below
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-name">Group Name</Label>
+              <Input
+                id="edit-name"
+                value={editFormData.name}
+                onChange={(e) => setEditFormData({ name: e.target.value })}
+                placeholder="Enter group name"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditOpen(false)}
+              disabled={updateGroup.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditSubmit}
+              disabled={updateGroup.isPending || !editFormData.name.trim()}
+            >
+              {updateGroup.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the group &quot;{selectedGroup?.name}
+              &quot;. This action cannot be undone and may affect related sales
+              data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteGroup.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleteGroup.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteGroup.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

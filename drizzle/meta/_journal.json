@@ -50,6 +50,13 @@
       "when": 1760232640057,
       "tag": "0007_common_omega_flight",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1760281747800,
+      "tag": "0008_yellow_darkstar",
+      "breakpoints": true
     }
   ]
 }

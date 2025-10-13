@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { Button } from "~/components/ui/button";
+import { SaleActions } from "./_components/sale-actions";
 
 export type SaleData = {
   id: number;
@@ -101,7 +102,15 @@ export const salesColumns: ColumnDef<SaleData>[] = [
       );
     },
     cell: ({ row }) => {
-      const date: Date = row.getValue("createdAt");
+      const date = row.getValue("createdAt");
+      // Handle different date formats safely
+      const dateObj =
+        date instanceof Date ? date : new Date(date as string | number);
+
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        return <div>Invalid Date</div>;
+      }
       return (
         <div>
           {new Intl.DateTimeFormat("id-ID", {
@@ -110,7 +119,7 @@ export const salesColumns: ColumnDef<SaleData>[] = [
             day: "numeric",
             hour: "2-digit",
             minute: "2-digit",
-          }).format(new Date(date))}
+          }).format(dateObj)}
         </div>
       );
     },
@@ -140,5 +149,9 @@ export const salesColumns: ColumnDef<SaleData>[] = [
       }
       return true;
     },
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => <SaleActions sale={row.original} />,
   },
 ];

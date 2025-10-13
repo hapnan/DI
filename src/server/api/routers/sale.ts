@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, count } from "drizzle-orm";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { sales, groups } from "~/server/db/schema";
 
@@ -31,25 +31,51 @@ export const saleRouter = createTRPCRouter({
       }
     }),
 
-  // Get all sales with group information
-  getAll: publicProcedure.query(async ({ ctx }) => {
-    return ctx.db
-      .select({
-        id: sales.id,
-        seedsSold: sales.seedsSold,
-        pricePerSeed: sales.pricePerSeed,
-        totalPrice: sales.totalPrice,
-        createdAt: sales.createdAt,
-        updatedAt: sales.updatedAt,
-        group: {
-          id: groups.id,
-          name: groups.name,
-        },
-      })
-      .from(sales)
-      .innerJoin(groups, eq(sales.groupId, groups.id))
-      .orderBy(desc(sales.createdAt));
-  }),
+  // Get all sales with group information (with pagination support)
+  getAll: publicProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).optional().default(10),
+          offset: z.number().min(0).optional().default(0),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const { limit = 10, offset = 0 } = input ?? {};
+
+      // Get total count
+      const totalCountResult = await ctx.db
+        .select({ count: count() })
+        .from(sales);
+      const totalCount = totalCountResult[0]?.count ?? 0;
+
+      // Get paginated data
+      const data = await ctx.db
+        .select({
+          id: sales.id,
+          seedsSold: sales.seedsSold,
+          pricePerSeed: sales.pricePerSeed,
+          totalPrice: sales.totalPrice,
+          createdAt: sales.createdAt,
+          updatedAt: sales.updatedAt,
+          group: {
+            id: groups.id,
+            name: groups.name,
+          },
+        })
+        .from(sales)
+        .innerJoin(groups, eq(sales.groupId, groups.id))
+        .orderBy(desc(sales.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      return {
+        data,
+        totalCount,
+        pageCount: Math.ceil(totalCount / limit),
+      };
+    }),
 
   // Get sales by group ID
   getByGroupId: publicProcedure
@@ -72,4 +98,31 @@ export const saleRouter = createTRPCRouter({
 
     return result[0]?.total ?? 0;
   }),
+
+  // Update a sale by ID
+  update: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        groupId: z.number(),
+        seedsSold: z.number().positive(),
+        pricePerSeed: z.number().min(0).optional(),
+        totalPrice: z.number().min(0).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return await ctx.db
+        .update(sales)
+        .set(data)
+        .where(eq(sales.id, id))
+        .returning();
+    }),
+
+  // Delete a sale by ID
+  delete: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return await ctx.db.delete(sales).where(eq(sales.id, input.id));
+    }),
 });

@@ -30,12 +30,29 @@ export default async function Home() {
           </div>
 
           {/* Action Cards */}
-          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="transition-shadow hover:shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-2xl">👥</span>
+                  Setup Anggota
+                </CardTitle>
+                <CardDescription>
+                  Add and manage group members for tracking.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="secondary" className="w-full">
+                  <Link href="/setup-members">Setup Members</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
             <Card className="transition-shadow hover:shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <span className="text-2xl">⚙️</span>
-                  Setup Groups
+                  Setup Kelompok
                 </CardTitle>
                 <CardDescription>
                   Create seed groups before recording sales data.
@@ -44,42 +61,6 @@ export default async function Home() {
               <CardContent>
                 <Button asChild variant="secondary" className="w-full">
                   <Link href="/setup">Setup Groups</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="transition-shadow hover:shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🌱</span>
-                  Record Seed Sales
-                </CardTitle>
-                <CardDescription>
-                  Add new seed sales records with group selection and quantity
-                  input.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/sales-input">Record Seed Sales</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="transition-shadow hover:shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🍃</span>
-                  Record Leaf Purchase
-                </CardTitle>
-                <CardDescription>
-                  Add new leaf purchase records with group selection and
-                  quantity input.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/leaf-purchase-input">Record Leaf Purchase</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -98,6 +79,76 @@ export default async function Home() {
               <CardContent>
                 <Button asChild variant="outline" className="w-full">
                   <Link href="/sales-data">View All Data</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="transition-shadow hover:shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-2xl">🌱</span>
+                  Penjualan Bibit Internal
+                </CardTitle>
+                <CardDescription>
+                  Form for recording internal seed sales
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild className="w-full">
+                  <Link href="/seed-sales-input">Record Seed Sales</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="transition-shadow hover:shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-2xl">🌱</span>
+                  Penjualan Bibit Kelompok
+                </CardTitle>
+                <CardDescription>
+                  Form for recording group seed sales
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/sales-input">Old Form</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="transition-shadow hover:shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-2xl">🍃</span>
+                  Pemebelian Daun Internal
+                </CardTitle>
+                <CardDescription>
+                  Form for recording internal leaf purchases
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild className="w-full">
+                  <Link href="/internal-leaf-purchase">
+                    Record Leaf Purchase
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="transition-shadow hover:shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-2xl">🍃</span>
+                  Pembelian Daun Kelompok
+                </CardTitle>
+                <CardDescription>
+                  Form for recording group leaf purchases.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/leaf-purchase-input">Old Form</Link>
                 </Button>
               </CardContent>
             </Card>

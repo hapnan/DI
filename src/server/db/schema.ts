@@ -1,16 +1,7 @@
 // Schema for seed sales application
 
 import { sql } from "drizzle-orm";
-import {
-  index,
-  pgTableCreator,
-  integer,
-  varchar,
-  timestamp,
-  serial,
-  date,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { index, pgTableCreator, uniqueIndex } from "drizzle-orm/pg-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -101,28 +92,87 @@ export const posts = createTable(
 
 export const weeklyLimits = createTable(
   "weekly_limits",
-  {
-    id: serial("id").primaryKey(),
-    groupId: integer("groupId")
+  (d) => ({
+    id: d.integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    groupId: d
+      .integer("groupId")
       .notNull()
       .references(() => groups.id, { onDelete: "cascade" }),
-    weekStart: date("weekStart").notNull(),
-    weekEnd: date("weekEnd").notNull(),
-    totalLimit: integer("totalLimit").notNull().default(400),
-    usedLimit: integer("usedLimit").notNull().default(0),
-    remainingLimit: integer("remainingLimit").notNull().default(400),
-    carriedOverFromPrevious: integer("carriedOverFromPrevious")
+    weekStart: d.date("weekStart").notNull(),
+    weekEnd: d.date("weekEnd").notNull(),
+    totalLimit: d.integer("totalLimit").notNull().default(400),
+    usedLimit: d.integer("usedLimit").notNull().default(0),
+    remainingLimit: d.integer("remainingLimit").notNull().default(400),
+    carriedOverFromPrevious: d
+      .integer("carriedOverFromPrevious")
       .notNull()
       .default(0),
-    createdAt: timestamp("createdAt", { precision: 3 }).notNull().defaultNow(),
-    updatedAt: timestamp("updatedAt", { precision: 3 }).notNull().defaultNow(),
-  },
-  (table) => ({
-    groupIdIdx: index("weekly_limits_groupId_idx").on(table.groupId),
-    weekStartIdx: index("weekly_limits_weekStart_idx").on(table.weekStart),
-    uniqueGroupWeek: uniqueIndex("weekly_limits_groupId_weekStart_unique").on(
-      table.groupId,
-      table.weekStart,
-    ),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
   }),
+  (t) => [
+    index("weekly_limits_groupId_idx").on(t.groupId),
+    index("weekly_limits_weekStart_idx").on(t.weekStart),
+    uniqueIndex("weekly_limits_groupId_weekStart_unique").on(
+      t.groupId,
+      t.weekStart,
+    ),
+  ],
+);
+
+export const members = createTable(
+  "member",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    name: d.varchar({ length: 256 }).notNull().unique(),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+  }),
+  (t) => [index("member_name_idx").on(t.name)],
+);
+
+export const internalSeedSale = createTable(
+  "internal_seed_sale",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    memberId: d
+      .integer()
+      .references(() => members.id)
+      .notNull(),
+    seedsSold: d.integer().notNull(),
+    pricePerSeed: d.integer().default(700),
+    totalPrice: d.integer(),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+  }),
+  (t) => [index("internal_seed_sale_member_idx").on(t.memberId)],
+);
+
+export const internalLeafPurchase = createTable(
+  "internal_leaf_purchase",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    memberId: d
+      .integer()
+      .references(() => members.id)
+      .notNull(),
+    leavesPurchased: d.integer().notNull(),
+    totalCost: d.integer().default(0),
+    costPerLeaf: d.integer().default(200),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+  }),
+  (t) => [index("internal_leaf_purchase_member_idx").on(t.memberId)],
 );

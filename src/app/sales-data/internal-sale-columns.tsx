@@ -4,29 +4,29 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { Button } from "~/components/ui/button";
-import { LeafPurchaseActions } from "./_components/leaf-purchase-actions";
+import { InternalSaleActions } from "./_components/internal-sale-actions";
 
-export type LeafPurchaseData = {
+export type SaleData = {
   id: number;
-  leavesPurchased: number;
-  costPerLeaf: number | null;
-  totalCost: number | null;
+  seedsSold: number;
+  pricePerSeed: number | null;
+  totalPrice: number | null;
   createdAt: Date;
-  group: {
+  member: {
     id: number;
     name: string;
   };
 };
 
-export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
+export const internalSalesColumns: ColumnDef<SaleData>[] = [
   {
     accessorKey: "id",
-    header: "Purchase ID",
+    header: "Sale ID",
     cell: ({ row }) => <div className="font-medium">#{row.getValue("id")}</div>,
   },
   {
-    id: "groupName",
-    accessorKey: "group.name",
+    id: "memberName",
+    accessorKey: "member.name",
     header: ({ column }) => {
       return (
         <Button
@@ -38,22 +38,24 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
         </Button>
       );
     },
-    cell: ({ row }) => <div>{row.original.group.name}</div>,
+    cell: ({ row }) => <div>{row.original.member.name}</div>,
   },
   {
-    accessorKey: "costPerLeaf",
-    header: () => <div className="text-right">Cost Per Leaf</div>,
+    accessorKey: "pricePerSeed",
+    header: () => <div className="text-right">Price Per Seed</div>,
     cell: ({ row }) => {
-      const cost: number | null = row.getValue("costPerLeaf");
-      return (
-        <div className="text-right font-mono">
-          {cost?.toLocaleString() ?? "N/A"}
-        </div>
-      );
+      const price: number | null = row.getValue("pricePerSeed");
+      const formated = new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }).format(price ?? 0);
+
+      return <div className="text-right font-mono">{formated}</div>;
     },
   },
   {
-    accessorKey: "leavesPurchased",
+    accessorKey: "seedsSold",
     header: ({ column }) => {
       return (
         <div className="text-right">
@@ -61,27 +63,28 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Leaves Purchased
+            Seeds Sold
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         </div>
       );
     },
     cell: ({ row }) => {
-      const amount: number = row.getValue("leavesPurchased");
+      const amount: number = row.getValue("seedsSold");
       return <div className="text-right font-mono">{amount}</div>;
     },
   },
   {
-    accessorKey: "totalCost",
-    header: () => <div className="text-right">Total Cost</div>,
+    accessorKey: "totalPrice",
+    header: () => <div className="text-right">Total Price</div>,
     cell: ({ row }) => {
-      const cost = row.getValue("totalCost");
-      return (
-        <div className="text-right font-mono">
-          {cost?.toLocaleString() ?? "N/A"}
-        </div>
-      );
+      const price: number | null = row.getValue("totalPrice");
+      const formated = new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }).format(price ?? 0);
+      return <div className="text-right font-mono">{formated}</div>;
     },
   },
   {
@@ -108,11 +111,12 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
       if (isNaN(dateObj.getTime())) {
         return <div>Invalid Date</div>;
       }
+
       return (
         <div>
           {new Intl.DateTimeFormat("id-ID", {
             year: "numeric",
-            month: "short",
+            month: "long",
             day: "numeric",
             hour: "2-digit",
             minute: "2-digit",
@@ -149,6 +153,6 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <LeafPurchaseActions purchase={row.original} />,
+    cell: ({ row }) => <InternalSaleActions sale={row.original} />,
   },
 ];

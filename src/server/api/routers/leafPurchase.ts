@@ -62,4 +62,33 @@ export const leafPurchaseRouter = createTRPCRouter({
 
     return result[0]?.total ?? 0;
   }),
+
+  // Update a leaf purchase by ID
+  update: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        groupId: z.number().min(1),
+        leavesPurchased: z.number().min(0),
+        totalCost: z.number().min(0),
+        costPerLeaf: z.number().min(0).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return await ctx.db
+        .update(leafPurchases)
+        .set(data)
+        .where(eq(leafPurchases.id, id))
+        .returning();
+    }),
+
+  // Delete a leaf purchase by ID
+  delete: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return await ctx.db
+        .delete(leafPurchases)
+        .where(eq(leafPurchases.id, input.id));
+    }),
 });

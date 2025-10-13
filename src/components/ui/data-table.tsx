@@ -12,6 +12,8 @@ import {
   type ColumnFiltersState,
   type SortingState,
   type VisibilityState,
+  type PaginationState,
+  type Updater,
 } from "@tanstack/react-table";
 import { ChevronDown } from "lucide-react";
 import { type DateRange } from "react-day-picker";
@@ -24,6 +26,13 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import {
   Table,
   TableBody,
@@ -40,6 +49,15 @@ interface DataTableProps<TData, TValue> {
   searchKey?: string;
   searchPlaceholder?: string;
   dateFilterKey?: string;
+  // Server-side pagination props
+  manualPagination?: boolean;
+  pageCount?: number;
+  pageIndex?: number;
+  pageSize?: number;
+  onPaginationChange?: (pagination: {
+    pageIndex: number;
+    pageSize: number;
+  }) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -48,6 +66,11 @@ export function DataTable<TData, TValue>({
   searchKey,
   searchPlaceholder = "Filter...",
   dateFilterKey,
+  manualPagination = false,
+  pageCount: controlledPageCount,
+  pageIndex: controlledPageIndex,
+  pageSize: controlledPageSize,
+  onPaginationChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -58,6 +81,65 @@ export function DataTable<TData, TValue>({
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(
     undefined,
   );
+
+  // Local pagination state (used for client-side pagination)
+  const [localPagination, setLocalPagination] = React.useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  // Use controlled pagination if provided, otherwise use local state
+  const pagination = React.useMemo(
+    () =>
+      manualPagination
+        ? {
+            pageIndex: controlledPageIndex ?? 0,
+            pageSize: controlledPageSize ?? 10,
+          }
+        : localPagination,
+    [
+      manualPagination,
+      controlledPageIndex,
+      controlledPageSize,
+      localPagination,
+    ],
+  );
+
+  const handlePaginationChange = React.useCallback(
+    (updater: Updater<PaginationState>) => {
+      if (manualPagination && onPaginationChange) {
+        const newPagination =
+          typeof updater === "function" ? updater(pagination) : updater;
+        onPaginationChange(newPagination);
+      } else {
+        setLocalPagination(updater);
+      }
+    },
+    [manualPagination, onPaginationChange, pagination],
+  );
+
+  const table = useReactTable({
+    data,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: manualPagination
+      ? undefined
+      : getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: handlePaginationChange,
+    manualPagination,
+    pageCount: controlledPageCount,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      pagination,
+    },
+  });
 
   // Apply date range filter
   React.useEffect(() => {
@@ -74,24 +156,7 @@ export function DataTable<TData, TValue>({
         column.setFilterValue(undefined);
       }
     }
-  }, [dateRange, dateFilterKey]);
-
-  const table = useReactTable({
-    data,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-    },
-  });
+  }, [dateRange, dateFilterKey, table]);
 
   return (
     <div className="w-full">
@@ -191,28 +256,77 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="text-muted-foreground flex-1 text-sm">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+      <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="text-muted-foreground flex items-center gap-4 text-sm">
+          <div>
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
+          </div>
+          {manualPagination && controlledPageCount !== undefined && (
+            <div className="text-muted-foreground text-xs">
+              Showing {data.length} rows
+            </div>
+          )}
         </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-sm">
+              Rows per page:
+            </span>
+            <Select
+              value={table.getState().pagination.pageSize.toString()}
+              onValueChange={(value) => {
+                table.setPageSize(Number(value));
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue
+                  placeholder={table.getState().pagination.pageSize}
+                />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[10, 20, 30, 50, 100].map((pageSize) => (
+                  <SelectItem key={pageSize} value={`${pageSize}`}>
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.firstPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              First
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.lastPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Last
+            </Button>
+          </div>
         </div>
       </div>
     </div>

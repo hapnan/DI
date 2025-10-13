@@ -4,7 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { Button } from "~/components/ui/button";
-import { LeafPurchaseActions } from "./_components/leaf-purchase-actions";
+import { InternalLeafPurchaseActions } from "./_components/internal-leaf-purchase-actions";
 
 export type LeafPurchaseData = {
   id: number;
@@ -12,21 +12,21 @@ export type LeafPurchaseData = {
   costPerLeaf: number | null;
   totalCost: number | null;
   createdAt: Date;
-  group: {
+  member: {
     id: number;
     name: string;
   };
 };
 
-export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
+export const internalLeafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
   {
     accessorKey: "id",
     header: "Purchase ID",
     cell: ({ row }) => <div className="font-medium">#{row.getValue("id")}</div>,
   },
   {
-    id: "groupName",
-    accessorKey: "group.name",
+    id: "memberName",
+    accessorKey: "member.name",
     header: ({ column }) => {
       return (
         <Button
@@ -38,7 +38,7 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
         </Button>
       );
     },
-    cell: ({ row }) => <div>{row.original.group.name}</div>,
+    cell: ({ row }) => <div>{row.original.member.name}</div>,
   },
   {
     accessorKey: "costPerLeaf",
@@ -116,7 +116,7 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
             day: "numeric",
             hour: "2-digit",
             minute: "2-digit",
-          }).format(dateObj)}
+          }).format(new Date(dateObj))}
         </div>
       );
     },
@@ -149,6 +149,6 @@ export const leafPurchaseColumns: ColumnDef<LeafPurchaseData>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <LeafPurchaseActions purchase={row.original} />,
+    cell: ({ row }) => <InternalLeafPurchaseActions purchase={row.original} />,
   },
 ];
