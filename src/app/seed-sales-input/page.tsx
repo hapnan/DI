@@ -35,6 +35,7 @@ import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useSession } from "~/lib/auth-client";
+import { getUserRole } from "~/lib/session-utils";
 
 const seedSalesSchema = z.object({
   memberId: z.string().min(1, "Please select a member"),
@@ -89,7 +90,7 @@ export default function SeedSalesInputPage() {
 
   // Calculate price based on user role
   const getPriceInfo = () => {
-    const role = (session?.user as any)?.role || "Abu";
+    const role = getUserRole(session);
     let pricePerSeed = 700;
 
     switch (role) {

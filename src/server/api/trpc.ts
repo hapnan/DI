@@ -12,6 +12,7 @@ import { ZodError } from "zod";
 
 import { db } from "~/server/db";
 import { auth } from "~/lib/auth";
+import type { UserRole } from "~/types/auth";
 
 /**
  * 1. CONTEXT
@@ -37,7 +38,7 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
     user: session?.user
       ? {
           ...session.user,
-          role: (session.user as any).role as string, // Type assertion for role field
+          role: (session.user as { role: UserRole }).role, // Type-safe role access
         }
       : null,
     ...opts,

@@ -35,6 +35,7 @@ import { InlineLoading, ButtonLoading } from "~/components/ui/loading";
 
 import { api } from "~/trpc/react";
 import { useSession } from "~/lib/auth-client";
+import { getUserRole } from "~/lib/session-utils";
 
 const formSchema = z.object({
   groupId: z.string().min(1, "Please select a group"),
@@ -66,7 +67,7 @@ export default function SalesInputPage() {
 
   // Calculate price based on user role
   const getPriceInfo = () => {
-    const role = (session?.user as any)?.role || "Abu";
+    const role = getUserRole(session);
     let pricePerSeed = 700;
 
     switch (role) {

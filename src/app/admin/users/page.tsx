@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
 import {
@@ -32,15 +31,17 @@ import { MdArrowBackIosNew } from "react-icons/md";
 import { useSession } from "~/lib/auth-client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { getUserRole } from "~/lib/session-utils";
+import type { UserRole } from "~/types/auth";
 
-const roleColors: Record<string, string> = {
+const roleColors: Record<UserRole, string> = {
   Raden: "bg-purple-500 text-white",
   Ultra: "bg-blue-500 text-white",
   Ijo: "bg-green-500 text-white",
   Abu: "bg-gray-500 text-white",
 };
 
-const roleDescriptions: Record<string, string> = {
+const roleDescriptions: Record<UserRole, string> = {
   Raden: "Administrator - Full system access",
   Ultra: "Manager - Full data access",
   Ijo: "User - Create and edit own data",
@@ -50,7 +51,7 @@ const roleDescriptions: Record<string, string> = {
 export default function UsersManagementPage() {
   const router = useRouter();
   const { data: session, isPending: sessionLoading } = useSession();
-  const userRole = (session?.user as any)?.role;
+  const userRole = getUserRole(session);
 
   // Redirect if not Raden
   if (!sessionLoading && userRole !== "Raden") {
@@ -68,15 +69,15 @@ export default function UsersManagementPage() {
       void utils.user.getAll.invalidate();
       void utils.user.getStats.invalidate();
     },
-    onError: (error) => {
-      toast.error(error.message || "Failed to update user role");
+    onError: (error: { message?: string }) => {
+      toast.error(error.message ?? "Failed to update user role");
     },
   });
 
   const handleRoleChange = (userId: string, newRole: string) => {
     updateRoleMutation.mutate({
       userId,
-      newRole: newRole as "Raden" | "Ultra" | "Ijo" | "Abu",
+      newRole: newRole as UserRole,
     });
   };
 
@@ -177,11 +178,13 @@ export default function UsersManagementPage() {
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Badge className={roleColors[user.role]}>
+                      <Badge
+                        className={roleColors[user.role as UserRole] ?? ""}
+                      >
                         {user.role}
                       </Badge>
                       <div className="text-muted-foreground mt-1 text-xs">
-                        {roleDescriptions[user.role]}
+                        {roleDescriptions[user.role as UserRole]}
                       </div>
                     </TableCell>
                     <TableCell>

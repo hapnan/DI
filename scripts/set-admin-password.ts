@@ -20,4 +20,7 @@ async function setAdminPassword() {
   await conn.end();
 }
 
-setAdminPassword();
+setAdminPassword().catch((err) => {
+  console.error("Failed to set admin password:", err);
+  process.exit(1);
+});

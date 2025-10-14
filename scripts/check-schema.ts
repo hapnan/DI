@@ -24,8 +24,11 @@ async function checkTables() {
       "✅ Sales table structure includes userId:",
       sales[0] ? Object.keys(sales[0]) : "no sales yet",
     );
-  } catch (error: any) {
-    console.error("❌ Error:", error.message);
+  } catch (error: unknown) {
+    console.error(
+      "❌ Error:",
+      error instanceof Error ? error.message : String(error),
+    );
   } finally {
     await conn.end();
   }

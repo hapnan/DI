@@ -24,7 +24,7 @@ export const saleRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       try {
         // Get price based on user role
-        const pricePerSeed = getSeedPriceByRole(ctx.user.role as any);
+        const pricePerSeed = getSeedPriceByRole(ctx.user.role);
         const totalPrice = calculateTotalPrice(input.seedsSold, pricePerSeed);
 
         return await ctx.db.insert(sales).values({
@@ -176,7 +176,7 @@ export const saleRouter = createTRPCRouter({
       }
 
       // Recalculate price based on user role
-      const pricePerSeed = getSeedPriceByRole(ctx.user.role as any);
+      const pricePerSeed = getSeedPriceByRole(ctx.user.role);
       const totalPrice = calculateTotalPrice(
         updateData.seedsSold,
         pricePerSeed,

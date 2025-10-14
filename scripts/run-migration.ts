@@ -6,7 +6,7 @@ import { join } from "path";
 const DATABASE_URL = process.env.DATABASE_URL!;
 
 const conn = new Pool({ connectionString: DATABASE_URL });
-const db = drizzle({ client: conn, casing: "snake_case" });
+drizzle({ client: conn, casing: "snake_case" });
 
 async function runMigration() {
   console.log("Running auth migration...");
@@ -19,8 +19,11 @@ async function runMigration() {
   try {
     await conn.query(sql);
     console.log("✅ Migration applied successfully!");
-  } catch (error: any) {
-    console.error("❌ Migration failed:", error.message);
+  } catch (error: unknown) {
+    console.error(
+      "❌ Migration failed:",
+      error instanceof Error ? error.message : String(error),
+    );
     throw error;
   } finally {
     await conn.end();

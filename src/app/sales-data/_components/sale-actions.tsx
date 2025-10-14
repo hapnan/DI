@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
@@ -42,6 +42,7 @@ import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useSession } from "~/lib/auth-client";
+import { getUserRole, getUserId } from "~/lib/session-utils";
 
 type SaleData = {
   id: number;
@@ -63,8 +64,8 @@ export function SaleActions({ sale }: { sale: SaleData }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role || "Abu";
-  const userId = session?.user?.id;
+  const userRole = getUserRole(session);
+  const userId = getUserId(session);
 
   const [formData, setFormData] = useState({
     groupId: sale.group.id.toString(),

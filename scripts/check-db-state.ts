@@ -15,7 +15,9 @@ async function checkAndFix() {
       );
     `);
 
-    const userTableExists = userTableCheck.rows[0].exists;
+    const userTableExists = (
+      userTableCheck.rows[0] as { exists: boolean } | undefined
+    )?.exists;
     console.log(`DI_user table exists: ${userTableExists}`);
 
     if (userTableExists) {
@@ -27,9 +29,11 @@ async function checkAndFix() {
         ORDER BY ordinal_position;
       `);
       console.log("\nDI_user columns:");
-      userColumns.rows.forEach((row: any) => {
-        console.log(`  - ${row.column_name}: ${row.data_type}`);
-      });
+      userColumns.rows.forEach(
+        (row: { column_name: string; data_type: string }) => {
+          console.log(`  - ${row.column_name}: ${row.data_type}`);
+        },
+      );
 
       // Check if user_id column exists in DI_sale
       const saleColumns = await conn.query(`
@@ -43,8 +47,11 @@ async function checkAndFix() {
     } else {
       console.log("\n📝 Need to create auth tables");
     }
-  } catch (error: any) {
-    console.error("Error:", error.message);
+  } catch (error: unknown) {
+    console.error(
+      "Error:",
+      error instanceof Error ? error.message : String(error),
+    );
   } finally {
     await conn.end();
   }

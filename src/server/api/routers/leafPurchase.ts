@@ -84,7 +84,7 @@ export const leafPurchaseRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       // Get price based on user role
-      const costPerLeaf = getLeafPriceByRole(ctx.user.role as any);
+      const costPerLeaf = getLeafPriceByRole(ctx.user.role);
       const totalCost = calculateTotalPrice(input.leavesPurchased, costPerLeaf);
 
       return ctx.db
@@ -174,7 +174,7 @@ export const leafPurchaseRouter = createTRPCRouter({
       }
 
       // Recalculate price based on user role
-      const costPerLeaf = getLeafPriceByRole(ctx.user.role as any);
+      const costPerLeaf = getLeafPriceByRole(ctx.user.role);
       const totalCost = calculateTotalPrice(
         updateData.leavesPurchased,
         costPerLeaf,

@@ -35,6 +35,7 @@ import { Link, Loader2 } from "lucide-react";
 import * as React from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { useSession } from "~/lib/auth-client";
+import { getUserRole } from "~/lib/session-utils";
 
 const leafPurchaseSchema = z.object({
   memberId: z.string().min(1, "Please select a member"),
@@ -89,7 +90,7 @@ export default function LeafPurchaseInputPage() {
 
   // Calculate price based on user role
   const getPriceInfo = () => {
-    const role = (session?.user as any)?.role || "Abu";
+    const role = getUserRole(session);
     let costPerLeaf = 200;
 
     switch (role) {

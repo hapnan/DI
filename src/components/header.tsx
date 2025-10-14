@@ -14,8 +14,10 @@ import { Badge } from "~/components/ui/badge";
 import { User, LogOut, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getUserRole } from "~/lib/session-utils";
+import type { UserRole } from "~/types/auth";
 
-const roleColors: Record<string, string> = {
+const roleColors: Record<UserRole, string> = {
   Raden: "bg-purple-500 text-white",
   Ultra: "bg-blue-500 text-white",
   Ijo: "bg-green-500 text-white",
@@ -31,7 +33,7 @@ export function Header() {
   }
 
   const user = session.user;
-  const userRole = (user as any)?.role || "Abu";
+  const userRole = getUserRole(session);
 
   const handleSignOut = async () => {
     await signOut({

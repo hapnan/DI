@@ -12,15 +12,17 @@ import {
 import { Badge } from "~/components/ui/badge";
 import { useSession } from "~/lib/auth-client";
 import { SectionLoading } from "~/components/ui/loading";
+import { getUserRole, getUserName } from "~/lib/session-utils";
+import type { UserRole } from "~/types/auth";
 
-const roleColors: Record<string, string> = {
+const roleColors: Record<UserRole, string> = {
   Raden: "bg-purple-500 text-white",
   Ultra: "bg-blue-500 text-white",
   Ijo: "bg-green-500 text-white",
   Abu: "bg-gray-500 text-white",
 };
 
-const roleLabels: Record<string, string> = {
+const roleLabels: Record<UserRole, string> = {
   Raden: "Administrator",
   Ultra: "Manager",
   Ijo: "User",
@@ -29,8 +31,8 @@ const roleLabels: Record<string, string> = {
 
 export function HomeContent() {
   const { data: session, isPending } = useSession();
-  const userRole = (session?.user as any)?.role || "Abu";
-  const userName = session?.user?.name || "User";
+  const userRole = getUserRole(session);
+  const userName = getUserName(session);
 
   if (isPending) {
     return <SectionLoading />;

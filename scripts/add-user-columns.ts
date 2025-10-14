@@ -92,9 +92,12 @@ async function addUserIdColumns() {
 
     await conn.query("COMMIT");
     console.log("\n🎉 Migration completed successfully!");
-  } catch (error: any) {
+  } catch (error: unknown) {
     await conn.query("ROLLBACK");
-    console.error("\n❌ Migration failed:", error.message);
+    console.error(
+      "\n❌ Migration failed:",
+      error instanceof Error ? error.message : String(error),
+    );
     throw error;
   } finally {
     await conn.end();

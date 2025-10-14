@@ -70,9 +70,13 @@ export default function SignUpPage() {
           result.error.message ?? "Failed to create account. Please try again.",
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Signup error:", err);
-      setError(err?.message ?? "Failed to create account. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to create account. Please try again.",
+      );
     } finally {
       setIsLoading(false);
     }

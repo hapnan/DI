@@ -57,10 +57,12 @@ export default function LoginPage() {
             "Failed to sign in. Please check your credentials.",
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login error:", err);
       setError(
-        err?.message ?? "Failed to sign in. Please check your credentials.",
+        err instanceof Error
+          ? err.message
+          : "Failed to sign in. Please check your credentials.",
       );
     } finally {
       setIsLoading(false);
@@ -113,7 +115,7 @@ export default function LoginPage() {
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
             <p className="text-muted-foreground text-center text-sm">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/signup"
                 className="text-primary font-medium hover:underline"
