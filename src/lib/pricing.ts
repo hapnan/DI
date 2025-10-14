@@ -16,10 +16,11 @@ export function getSeedPriceByRole(role: UserRole): number {
     case "Ijo":
       return 200; // Ijo sells to Ultra/Raden at 200
     case "Ultra":
+      return 300; // Standard price for higher roles
     case "Raden":
-      return 700; // Standard price for higher roles
+      return 300; // Standard price for higher roles
     default:
-      return 700;
+      return 300;
   }
 }
 
@@ -27,14 +28,15 @@ export function getLeafPriceByRole(role: UserRole): number {
   // Leaf purchases follow similar pricing structure
   switch (role) {
     case "Abu":
-      return 150; // Abu buys from Ijo at lower price
+      return 200; // Abu buys from Ijo at lower price
     case "Ijo":
-      return 200; // Ijo standard price
+      return 300; // Ijo standard price
     case "Ultra":
+      return 300; // Standard price for higher roles
     case "Raden":
-      return 200; // Standard price
+      return 300; // Standard price for higher roles
     default:
-      return 200;
+      return 300;
   }
 }
 

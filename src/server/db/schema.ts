@@ -113,7 +113,7 @@ export const seedTypes = createTable(
     id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
     name: d.varchar({ length: 100 }).notNull().unique(),
     description: d.varchar({ length: 500 }),
-    defaultPricePerSeed: d.integer().default(700),
+    defaultPricePerSeed: d.integer(),
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
