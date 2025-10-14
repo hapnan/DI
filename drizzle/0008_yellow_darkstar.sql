@@ -26,6 +26,14 @@ CREATE TABLE "DI_member" (
 	CONSTRAINT "DI_member_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
+-- Create sequence if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'DI_weekly_limits_id_seq') THEN
+        CREATE SEQUENCE "DI_weekly_limits_id_seq";
+    END IF;
+END $$;
+--> statement-breakpoint
 ALTER TABLE "DI_weekly_limits" ALTER COLUMN "id" SET DATA TYPE integer;--> statement-breakpoint
 ALTER TABLE "DI_weekly_limits" ALTER COLUMN "id" SET DEFAULT nextval('"DI_weekly_limits_id_seq"'::regclass);--> statement-breakpoint
 ALTER TABLE "DI_weekly_limits" ALTER COLUMN "createdAt" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
