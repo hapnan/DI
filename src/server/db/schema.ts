@@ -356,3 +356,63 @@ export const internalLeafPurchase = createTable(
     index("internal_leaf_purchase_user_idx").on(t.userId),
   ],
 );
+
+// ======================================
+// Price Management Tables
+// ======================================
+
+// Table for group-specific pricing (external sales/purchases)
+export const groupPrices = createTable(
+  "group_price",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    groupId: d
+      .integer()
+      .references(() => groups.id, { onDelete: "cascade" })
+      .notNull(),
+    itemType: d.varchar({ length: 20 }).notNull(), // 'seed' or 'leaf'
+    itemId: d.integer().notNull(), // seedTypeId or leafTypeId
+    price: d.integer().notNull(),
+    isActive: d.boolean().default(true).notNull(),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+  }),
+  (t) => [
+    index("group_price_group_idx").on(t.groupId),
+    index("group_price_item_idx").on(t.itemType, t.itemId),
+    uniqueIndex("group_price_unique").on(t.groupId, t.itemType, t.itemId),
+  ],
+);
+
+// Table for internal pricing (role-based or specific roles)
+export const internalPrices = createTable(
+  "internal_price",
+  (d) => ({
+    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+    itemType: d.varchar({ length: 20 }).notNull(), // 'seed' or 'leaf'
+    itemId: d.integer().notNull(), // seedTypeId or leafTypeId
+    roleType: d.varchar({ length: 20 }).notNull(), // 'all' or 'specific'
+    role: d.varchar({ length: 20 }), // null if roleType='all', otherwise 'Raden', 'Ultra', 'Ijo', 'Abu'
+    price: d.integer().notNull(),
+    isActive: d.boolean().default(true).notNull(),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+  }),
+  (t) => [
+    index("internal_price_item_idx").on(t.itemType, t.itemId),
+    index("internal_price_role_idx").on(t.roleType, t.role),
+    // Unique constraint: one price per item-role combination
+    uniqueIndex("internal_price_unique").on(
+      t.itemType,
+      t.itemId,
+      t.roleType,
+      t.role,
+    ),
+  ],
+);

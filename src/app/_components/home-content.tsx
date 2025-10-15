@@ -22,13 +22,6 @@ const roleColors: Record<UserRole, string> = {
   Abu: "bg-gray-500 text-white",
 };
 
-const roleLabels: Record<UserRole, string> = {
-  Raden: "Administrator",
-  Ultra: "Manager",
-  Ijo: "User",
-  Abu: "Read-Only",
-};
-
 export function HomeContent() {
   const { data: session, isPending } = useSession();
   const userRole = getUserRole(session);
@@ -57,9 +50,7 @@ export function HomeContent() {
             <span className="text-lg text-gray-600 dark:text-gray-400">
               Welcome, {userName}
             </span>
-            <Badge className={roleColors[userRole]}>
-              {roleLabels[userRole]}
-            </Badge>
+            <Badge className={roleColors[userRole]}>{userRole}</Badge>
           </div>
           <p className="mx-auto max-w-2xl text-xl text-gray-600 dark:text-gray-400">
             Track and manage your seed sales and leaf purchases efficiently with
@@ -129,25 +120,46 @@ export function HomeContent() {
 
           {/* User Management - Raden only */}
           {canManageUsers && (
-            <Card className="border-purple-200 bg-purple-50 transition-shadow hover:shadow-lg dark:border-purple-800 dark:bg-purple-950">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">👤</span>
-                  User Management
-                </CardTitle>
-                <CardDescription>
-                  Manage user roles and permissions (Admin only).
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  asChild
-                  className="w-full bg-purple-600 hover:bg-purple-700"
-                >
-                  <Link href="/admin/users">Manage Users</Link>
-                </Button>
-              </CardContent>
-            </Card>
+            <>
+              <Card className="border-purple-200 bg-gradient-to-b from-gray-50 to-gray-100 transition-shadow hover:shadow-lg dark:border-purple-800 dark:bg-purple-950 dark:from-gray-900 dark:to-gray-800">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-2xl">👤</span>
+                    User Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage user roles and permissions (Admin only).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    asChild
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Link href="/admin/users">Manage Users</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+              <Card className="border-purple-200 bg-gradient-to-b from-gray-50 to-gray-100 transition-shadow hover:shadow-lg dark:border-purple-800 dark:bg-purple-950 dark:from-gray-900 dark:to-gray-800">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="text-2xl">👤</span>
+                    Price Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage pricing for groups and internal roles (Admin only).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    asChild
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Link href="/price-management">Manage Users</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </>
           )}
 
           {/* Create Cards - Ijo, Ultra, Raden */}

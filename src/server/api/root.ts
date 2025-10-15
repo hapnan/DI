@@ -10,6 +10,7 @@ import { internalLeafRouter } from "~/server/api/routers/internalLeaf";
 import { seedTypeRouter } from "~/server/api/routers/seedType";
 import { leafTypeRouter } from "~/server/api/routers/leafType";
 import { userRouter } from "~/server/api/routers/user";
+import { priceRouter } from "~/server/api/routers/price";
 
 /**
  * This is the primary router for your server.
@@ -28,6 +29,7 @@ export const appRouter = createTRPCRouter({
   seedType: seedTypeRouter,
   leafType: leafTypeRouter,
   user: userRouter,
+  price: priceRouter,
 });
 
 // export type definition of API
