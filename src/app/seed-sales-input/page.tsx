@@ -91,7 +91,7 @@ export default function SeedSalesInputPage() {
   // Calculate price based on user role
   const getPriceInfo = () => {
     const role = getUserRole(session);
-    let pricePerSeed = 500;
+    const pricePerSeed = 500;
 
     const seedsSold = Number(watchSeedsSold) || 0;
     const totalPrice = seedsSold * pricePerSeed;

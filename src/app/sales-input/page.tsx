@@ -77,7 +77,7 @@ export default function SalesInputPage() {
       const total = seeds * pricePerSeed;
       form.setValue("totalPrice", total.toString());
     }
-  }, [watchSeedsSold, watchPricePerSeed]);
+  }, [watchSeedsSold, watchPricePerSeed, form]);
 
   // Get all groups for the select dropdown
   const { data: groups, isLoading: groupsLoading } =

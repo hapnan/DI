@@ -72,7 +72,7 @@ export default function LeafPurchaseInputPage() {
       const total = leaves * pricePerLeaf;
       form.setValue("totalPrice", total.toString());
     }
-  }, [watchLeavesPurchased, watchPricePerLeaf]);
+  }, [watchLeavesPurchased, watchPricePerLeaf, form]);
 
   // Get all groups for the select dropdown
   const { data: groups, isLoading: groupsLoading } =
