@@ -41,6 +41,8 @@ const formSchema = z.object({
   groupId: z.string().min(1, "Please select a group"),
   seedTypeId: z.string().min(1, "Please select a seed type"),
   seedsSold: z.string().min(1, "Please enter number of seeds sold"),
+  totalPrice: z.string().min(1, "Please enter total price"),
+  pricePerSeed: z.string().min(1, "Please enter price per seed"),
 });
 
 export default function SalesInputPage() {
@@ -60,36 +62,22 @@ export default function SalesInputPage() {
       groupId: "",
       seedTypeId: "1",
       seedsSold: "",
+      totalPrice: "",
+      pricePerSeed: "",
     },
   });
 
   const watchSeedsSold = form.watch("seedsSold");
+  const watchPricePerSeed = form.watch("pricePerSeed");
 
-  // Calculate price based on user role
-  const getPriceInfo = () => {
-    const role = getUserRole(session);
-    let pricePerSeed = 700;
-
-    switch (role) {
-      case "Abu":
-        pricePerSeed = 100;
-        break;
-      case "Ijo":
-        pricePerSeed = 200;
-        break;
-      case "Ultra":
-      case "Raden":
-        pricePerSeed = 700;
-        break;
+  React.useEffect(() => {
+    const seeds = parseInt(watchSeedsSold);
+    const pricePerSeed = parseFloat(watchPricePerSeed);
+    if (!isNaN(seeds) && !isNaN(pricePerSeed)) {
+      const total = seeds * pricePerSeed;
+      form.setValue("totalPrice", total.toString());
     }
-
-    const seedsSold = Number(watchSeedsSold) || 0;
-    const totalPrice = seedsSold * pricePerSeed;
-
-    return { pricePerSeed, totalPrice, role };
-  };
-
-  const { pricePerSeed, totalPrice, role } = getPriceInfo();
+  }, [watchSeedsSold, watchPricePerSeed]);
 
   // Get all groups for the select dropdown
   const { data: groups, isLoading: groupsLoading } =
@@ -236,28 +224,6 @@ export default function SalesInputPage() {
                 </div>
               )}
 
-              {/* Pricing Information Display */}
-              <div className="bg-muted/50 space-y-2 rounded-md border p-4">
-                <p className="text-sm font-medium">Pricing Information</p>
-                <div className="text-muted-foreground space-y-1 text-sm">
-                  <p>
-                    Your Role:{" "}
-                    <span className="text-foreground font-medium">{role}</span>
-                  </p>
-                  <p>
-                    Price per Seed:{" "}
-                    <span className="text-foreground font-medium">
-                      Rp {pricePerSeed.toLocaleString()}
-                    </span>
-                  </p>
-                  {watchSeedsSold && (
-                    <p className="text-foreground pt-2 text-base font-semibold">
-                      Total Price: Rp {totalPrice.toLocaleString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-
               <FormField
                 control={form.control}
                 name="seedsSold"
@@ -269,6 +235,42 @@ export default function SalesInputPage() {
                         type="number"
                         min="0"
                         placeholder="Enter number of seeds sold"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pricePerSeed"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price per Seed</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Enter price per seed"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="totalPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Price</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Enter total price"
                         {...field}
                       />
                     </FormControl>
