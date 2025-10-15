@@ -91,16 +91,18 @@ export default function LeafPurchaseInputPage() {
   // Calculate price based on user role
   const getPriceInfo = () => {
     const role = getUserRole(session);
-    let costPerLeaf = 200;
+    let costPerLeaf = 150;
 
     switch (role) {
       case "Abu":
-        costPerLeaf = 150;
+        costPerLeaf = 100;
         break;
       case "Ijo":
+        costPerLeaf = 150;
       case "Ultra":
+        costPerLeaf = 150;
       case "Raden":
-        costPerLeaf = 200;
+        costPerLeaf = 150;
         break;
     }
 

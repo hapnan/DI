@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -36,12 +36,14 @@ import { InlineLoading, ButtonLoading } from "~/components/ui/loading";
 import { api } from "~/trpc/react";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { useSession } from "~/lib/auth-client";
-import { getUserRole } from "~/lib/session-utils";
+import { getUserName } from "~/lib/session-utils";
 
 const formSchema = z.object({
   groupId: z.string().min(1, "Please select a group"),
   leafTypeId: z.string().min(1, "Please select a leaf type"),
   leavesPurchased: z.string().min(1, "Please enter number of leaves purchased"),
+  pricePerLeaf: z.string().min(1, "Please enter price per leaf"),
+  totalPrice: z.string().min(1, "Please enter total price"),
 });
 
 export default function LeafPurchaseInputPage() {
@@ -55,34 +57,22 @@ export default function LeafPurchaseInputPage() {
       groupId: "",
       leafTypeId: "1",
       leavesPurchased: "",
+      pricePerLeaf: "",
+      totalPrice: "",
     },
   });
 
   const watchLeavesPurchased = form.watch("leavesPurchased");
+  const watchPricePerLeaf = form.watch("pricePerLeaf");
 
-  // Calculate price based on user role
-  const getPriceInfo = () => {
-    const role = getUserRole(session);
-    let costPerLeaf = 200;
-
-    switch (role) {
-      case "Abu":
-        costPerLeaf = 150;
-        break;
-      case "Ijo":
-      case "Ultra":
-      case "Raden":
-        costPerLeaf = 200;
-        break;
+  React.useEffect(() => {
+    const leaves = parseInt(watchLeavesPurchased);
+    const pricePerLeaf = parseFloat(watchPricePerLeaf);
+    if (!isNaN(leaves) && !isNaN(pricePerLeaf)) {
+      const total = leaves * pricePerLeaf;
+      form.setValue("totalPrice", total.toString());
     }
-
-    const leavesPurchased = Number(watchLeavesPurchased) || 0;
-    const totalCost = leavesPurchased * costPerLeaf;
-
-    return { costPerLeaf, totalCost, role };
-  };
-
-  const { costPerLeaf, totalCost, role } = getPriceInfo();
+  }, [watchLeavesPurchased, watchPricePerLeaf]);
 
   // Get all groups for the select dropdown
   const { data: groups, isLoading: groupsLoading } =
@@ -107,6 +97,7 @@ export default function LeafPurchaseInputPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
+    const name = getUserName(session);
     try {
       await createLeafPurchase.mutateAsync({
         groupId: parseInt(values.groupId),
@@ -217,28 +208,6 @@ export default function LeafPurchaseInputPage() {
                 )}
               />
 
-              {/* Pricing Information Display */}
-              <div className="bg-muted/50 space-y-2 rounded-md border p-4">
-                <p className="text-sm font-medium">Pricing Information</p>
-                <div className="text-muted-foreground space-y-1 text-sm">
-                  <p>
-                    Your Role:{" "}
-                    <span className="text-foreground font-medium">{role}</span>
-                  </p>
-                  <p>
-                    Cost per Leaf:{" "}
-                    <span className="text-foreground font-medium">
-                      Rp {costPerLeaf.toLocaleString()}
-                    </span>
-                  </p>
-                  {watchLeavesPurchased && (
-                    <p className="text-foreground pt-2 text-base font-semibold">
-                      Total Cost: Rp {totalCost.toLocaleString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-
               <FormField
                 control={form.control}
                 name="leavesPurchased"
@@ -257,6 +226,44 @@ export default function LeafPurchaseInputPage() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="pricePerLeaf"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price Per Leaf</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Enter price per leaf"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="totalPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Price</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Enter total price"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="space-y-4">
                 <Button
                   type="submit"
