@@ -34,8 +34,6 @@ import {
 import { InlineLoading, ButtonLoading } from "~/components/ui/loading";
 
 import { api } from "~/trpc/react";
-import { useSession } from "~/lib/auth-client";
-import { getUserRole } from "~/lib/session-utils";
 
 const formSchema = z.object({
   groupId: z.string().min(1, "Please select a group"),
@@ -49,18 +47,37 @@ export default function SalesInputPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
-  const { data: session } = useSession();
+  const [selectedSeedTypeId, setSelectedSeedTypeId] = useState<number | null>(
+    null,
+  );
 
   const { data: weeklyLimits } = api.weeklyLimit.getCurrentLimit.useQuery(
     { groupId: selectedGroupId! },
     { enabled: !!selectedGroupId },
   );
 
+  // Fetch group price for selected group and seed type
+  const { data: groupPrices } = api.price.getAllGroupPrices.useQuery();
+
+  // Calculate price per seed based on group price settings
+  const getGroupPrice = React.useMemo(() => {
+    if (!selectedGroupId || !selectedSeedTypeId || !groupPrices) return null;
+
+    const priceConfig = groupPrices.find(
+      (p) =>
+        p.groupId === selectedGroupId &&
+        p.itemType === "seed" &&
+        p.itemId === selectedSeedTypeId &&
+        p.isActive,
+    );
+
+    return priceConfig?.price ?? null;
+  }, [selectedGroupId, selectedSeedTypeId, groupPrices]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       groupId: "",
-      seedTypeId: "1",
       seedsSold: "",
       totalPrice: "",
       pricePerSeed: "",
@@ -69,6 +86,16 @@ export default function SalesInputPage() {
 
   const watchSeedsSold = form.watch("seedsSold");
   const watchPricePerSeed = form.watch("pricePerSeed");
+  const watchSeedsTypeId = form.watch("seedTypeId");
+
+  // Auto-fill price per seed when group price is available
+  React.useEffect(() => {
+    if (getGroupPrice !== null) {
+      form.setValue("pricePerSeed", getGroupPrice.toString());
+    } else {
+      form.setValue("pricePerSeed", "");
+    }
+  }, [getGroupPrice, form]);
 
   React.useEffect(() => {
     const seeds = parseInt(watchSeedsSold);
@@ -181,7 +208,10 @@ export default function SalesInputPage() {
                   <FormItem>
                     <FormLabel>Seed Type</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={(e) => {
+                        field.onChange(e);
+                        setSelectedSeedTypeId(parseInt(e));
+                      }}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -220,6 +250,15 @@ export default function SalesInputPage() {
                     <span className="font-medium">Weekly Limit:</span>{" "}
                     {weeklyLimits?.remaininglimit || 400} /{" "}
                     {weeklyLimits?.totallimit || 400} seeds remaining this week.
+                  </p>
+                </div>
+              )}
+
+              {getGroupPrice !== null && (
+                <div className="rounded-md border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
+                  <p className="text-sm text-green-900 dark:text-green-100">
+                    <span className="font-medium">Harga Kelompok:</span> $
+                    {getGroupPrice} per seed
                   </p>
                 </div>
               )}

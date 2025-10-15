@@ -273,10 +273,15 @@ export function GroupPriceDialog({
                       step="0.01"
                       placeholder="0.00"
                       {...field}
-                      onChange={(e) =>
-                        field.onChange(parseFloat(e.target.value))
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        field.onChange(isNaN(value) ? undefined : value);
+                      }}
+                      value={
+                        field.value === undefined || isNaN(field.value)
+                          ? ""
+                          : field.value
                       }
-                      value={field.value ?? ""}
                     />
                   </FormControl>
                   <FormMessage />

@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { useState } from "react";
 import { MdArrowBackIosNew } from "react-icons/md";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -55,6 +56,9 @@ export default function SeedSalesInputPage() {
   const router = useRouter();
   const utils = api.useUtils();
   const { data: session } = useSession();
+  const [selectedSeedTypeId, setSelectedSeedTypeId] = useState<number | null>(
+    null,
+  );
 
   // Fetch all members
   const { data: members, isLoading: membersLoading } =
@@ -63,6 +67,9 @@ export default function SeedSalesInputPage() {
   // Fetch all seed types
   const { data: seedTypes, isLoading: seedTypesLoading } =
     api.seedType.getAll.useQuery();
+
+  // Fetch internal prices for seed sales
+  const { data: internalPrices } = api.price.getAllInternalPrices.useQuery();
 
   // Create sale mutation
   const createSale = api.internalSeed.create.useMutation({
@@ -88,18 +95,37 @@ export default function SeedSalesInputPage() {
 
   const watchSeedsSold = form.watch("seedsSold");
 
-  // Calculate price based on user role
-  const getPriceInfo = () => {
-    const role = getUserRole(session);
-    const pricePerSeed = 500;
+  // Get user role
+  const userRole = getUserRole(session);
 
-    const seedsSold = Number(watchSeedsSold) || 0;
-    const totalPrice = seedsSold * pricePerSeed;
+  // Calculate price based on configured internal prices with role-based fallback
+  const getInternalPrice = React.useMemo(() => {
+    if (!selectedSeedTypeId || !internalPrices) return 500; // Default fallback
 
-    return { pricePerSeed, totalPrice, role };
-  };
+    // Filter prices for the selected seed type
+    const seedPrices = internalPrices.filter(
+      (p) => p.itemType === "seed" && p.itemId === selectedSeedTypeId,
+    );
 
-  const { pricePerSeed, totalPrice, role } = getPriceInfo();
+    // Try to find specific role price first
+    const specificRolePrice = seedPrices.find(
+      (p) => p.roleType === "specific" && p.role === userRole,
+    );
+
+    // Try to find "all roles" price
+    const allRolesPrice = seedPrices.find((p) => p.roleType === "all");
+
+    // Priority: specific role > all roles > hardcoded fallback
+    if (specificRolePrice) return specificRolePrice.price;
+    if (allRolesPrice) return allRolesPrice.price;
+
+    // Hardcoded fallback for backward compatibility
+    return 500;
+  }, [selectedSeedTypeId, internalPrices, userRole]);
+
+  const pricePerSeed = getInternalPrice;
+  const seedsSold = Number(watchSeedsSold) || 0;
+  const totalPrice = seedsSold * pricePerSeed;
 
   function onSubmit(values: SeedSalesFormValues) {
     createSale.mutate({
@@ -170,7 +196,10 @@ export default function SeedSalesInputPage() {
                   <FormItem>
                     <FormLabel>Seed Type</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setSelectedSeedTypeId(parseInt(value));
+                      }}
                       defaultValue={field.value}
                       disabled={seedTypesLoading}
                     >
@@ -204,7 +233,9 @@ export default function SeedSalesInputPage() {
                 <div className="text-muted-foreground space-y-1 text-sm">
                   <p>
                     Your Role:{" "}
-                    <span className="text-foreground font-medium">{role}</span>
+                    <span className="text-foreground font-medium">
+                      {userRole}
+                    </span>
                   </p>
                   <p>
                     Price per Seed:{" "}

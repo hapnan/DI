@@ -35,8 +35,6 @@ import { InlineLoading, ButtonLoading } from "~/components/ui/loading";
 
 import { api } from "~/trpc/react";
 import { MdArrowBackIosNew } from "react-icons/md";
-import { useSession } from "~/lib/auth-client";
-import { getUserName } from "~/lib/session-utils";
 
 const formSchema = z.object({
   groupId: z.string().min(1, "Please select a group"),
@@ -49,7 +47,28 @@ const formSchema = z.object({
 export default function LeafPurchaseInputPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { data: session } = useSession();
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [selectedLeafTypeId, setSelectedLeafTypeId] = useState<number | null>(
+    null,
+  );
+
+  // Fetch group price for selected group and leaf type
+  const { data: groupPrices } = api.price.getAllGroupPrices.useQuery();
+
+  // Calculate price per leaf based on group price settings
+  const getGroupPrice = React.useMemo(() => {
+    if (!selectedGroupId || !selectedLeafTypeId || !groupPrices) return null;
+
+    const priceConfig = groupPrices.find(
+      (p) =>
+        p.groupId === selectedGroupId &&
+        p.itemType === "leaf" &&
+        p.itemId === selectedLeafTypeId &&
+        p.isActive,
+    );
+
+    return priceConfig?.price ?? null;
+  }, [selectedGroupId, selectedLeafTypeId, groupPrices]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -64,6 +83,13 @@ export default function LeafPurchaseInputPage() {
 
   const watchLeavesPurchased = form.watch("leavesPurchased");
   const watchPricePerLeaf = form.watch("pricePerLeaf");
+
+  // Auto-fill price per leaf when group price is available
+  React.useEffect(() => {
+    if (getGroupPrice !== null) {
+      form.setValue("pricePerLeaf", getGroupPrice.toString());
+    }
+  }, [getGroupPrice, form]);
 
   React.useEffect(() => {
     const leaves = parseInt(watchLeavesPurchased);
@@ -97,7 +123,6 @@ export default function LeafPurchaseInputPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    const name = getUserName(session);
     try {
       await createLeafPurchase.mutateAsync({
         groupId: parseInt(values.groupId),
@@ -134,7 +159,10 @@ export default function LeafPurchaseInputPage() {
                   <FormItem>
                     <FormLabel>Group Name</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={(e) => {
+                        field.onChange(e);
+                        setSelectedGroupId(parseInt(e));
+                      }}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -174,7 +202,10 @@ export default function LeafPurchaseInputPage() {
                   <FormItem>
                     <FormLabel>Leaf Type</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={(e) => {
+                        field.onChange(e);
+                        setSelectedLeafTypeId(parseInt(e));
+                      }}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -207,6 +238,15 @@ export default function LeafPurchaseInputPage() {
                   </FormItem>
                 )}
               />
+
+              {getGroupPrice !== null && (
+                <div className="rounded-md border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
+                  <p className="text-sm text-green-900 dark:text-green-100">
+                    <span className="font-medium">Group Price:</span> $
+                    {getGroupPrice} per leaf
+                  </p>
+                </div>
+              )}
 
               <FormField
                 control={form.control}

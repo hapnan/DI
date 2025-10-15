@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -55,6 +56,9 @@ export default function LeafPurchaseInputPage() {
   const router = useRouter();
   const utils = api.useUtils();
   const { data: session } = useSession();
+  const [selectedLeafTypeId, setSelectedLeafTypeId] = useState<number | null>(
+    null,
+  );
 
   // Fetch all members
   const { data: members, isLoading: membersLoading } =
@@ -64,6 +68,68 @@ export default function LeafPurchaseInputPage() {
   const { data: leafTypes, isLoading: leafTypesLoading } =
     api.leafType.getAll.useQuery();
 
+  // Fetch internal prices
+  const { data: internalPrices } = api.price.getAllInternalPrices.useQuery();
+
+  // Get user role
+  const userRole = getUserRole(session);
+
+  // Calculate price based on internal price settings or fallback to hardcoded
+  const getInternalPrice = React.useMemo(() => {
+    if (!selectedLeafTypeId || !internalPrices) {
+      // Fallback to old hardcoded prices if no price config
+      switch (userRole) {
+        case "Abu":
+          return 150;
+        case "Ijo":
+        case "Ultra":
+        case "Raden":
+          return 200;
+        default:
+          return 200;
+      }
+    }
+
+    // Try to find specific role price first
+    const specificRolePrice = internalPrices.find(
+      (p) =>
+        p.itemType === "leaf" &&
+        p.itemId === selectedLeafTypeId &&
+        p.roleType === "specific" &&
+        p.role === userRole &&
+        p.isActive,
+    );
+
+    if (specificRolePrice) {
+      return specificRolePrice.price;
+    }
+
+    // Try to find "all roles" price
+    const allRolesPrice = internalPrices.find(
+      (p) =>
+        p.itemType === "leaf" &&
+        p.itemId === selectedLeafTypeId &&
+        p.roleType === "all" &&
+        p.isActive,
+    );
+
+    if (allRolesPrice) {
+      return allRolesPrice.price;
+    }
+
+    // Fallback to old hardcoded prices
+    switch (userRole) {
+      case "Abu":
+        return 150;
+      case "Ijo":
+      case "Ultra":
+      case "Raden":
+        return 200;
+      default:
+        return 200;
+    }
+  }, [selectedLeafTypeId, internalPrices, userRole]);
+
   // Create leaf purchase mutation
   const createLeafPurchase = api.internalLeaf.create.useMutation({
     onSuccess: () => {
@@ -72,8 +138,8 @@ export default function LeafPurchaseInputPage() {
       void utils.internalLeaf.getAll.invalidate();
       router.push("/sales-data");
     },
-    onError: (error) => {
-      toast.error(error.message || "Failed to record leaf purchase");
+    onError: (error: { message?: string }) => {
+      toast.error(error.message ?? "Failed to record leaf purchase");
     },
   });
 
@@ -88,31 +154,10 @@ export default function LeafPurchaseInputPage() {
 
   const watchLeavesPurchased = form.watch("leavesPurchased");
 
-  // Calculate price based on user role
-  const getPriceInfo = () => {
-    const role = getUserRole(session);
-    let costPerLeaf = 150;
-
-    switch (role) {
-      case "Abu":
-        costPerLeaf = 100;
-        break;
-      case "Ijo":
-        costPerLeaf = 150;
-      case "Ultra":
-        costPerLeaf = 150;
-      case "Raden":
-        costPerLeaf = 150;
-        break;
-    }
-
-    const leavesPurchased = Number(watchLeavesPurchased) || 0;
-    const totalCost = leavesPurchased * costPerLeaf;
-
-    return { costPerLeaf, totalCost, role };
-  };
-
-  const { costPerLeaf, totalCost, role } = getPriceInfo();
+  // Calculate total cost based on configured price
+  const costPerLeaf = getInternalPrice;
+  const leavesPurchased = Number(watchLeavesPurchased) || 0;
+  const totalCost = leavesPurchased * costPerLeaf;
 
   function onSubmit(values: LeafPurchaseFormValues) {
     createLeafPurchase.mutate({
@@ -183,7 +228,10 @@ export default function LeafPurchaseInputPage() {
                   <FormItem>
                     <FormLabel>Leaf Type</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
+                      onValueChange={(e) => {
+                        field.onChange(e);
+                        setSelectedLeafTypeId(parseInt(e));
+                      }}
                       defaultValue={field.value}
                       disabled={leafTypesLoading}
                     >
@@ -217,7 +265,9 @@ export default function LeafPurchaseInputPage() {
                 <div className="text-muted-foreground space-y-1 text-sm">
                   <p>
                     Your Role:{" "}
-                    <span className="text-foreground font-medium">{role}</span>
+                    <span className="text-foreground font-medium">
+                      {userRole}
+                    </span>
                   </p>
                   <p>
                     Cost per Leaf:{" "}
