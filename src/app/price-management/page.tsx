@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MdArrowBackIosNew } from "react-icons/md";
@@ -60,12 +60,6 @@ export default function PriceManagementPage() {
   const router = useRouter();
   const { data: session, isPending: sessionLoading } = useSession();
   const userRole = getUserRole(session);
-
-  // Redirect if not Raden
-  if (!sessionLoading && userRole !== "Raden") {
-    router.push("/");
-    return null;
-  }
 
   const [groupPriceDialogOpen, setGroupPriceDialogOpen] = useState(false);
   const [internalPriceDialogOpen, setInternalPriceDialogOpen] = useState(false);
@@ -153,8 +147,19 @@ export default function PriceManagementPage() {
     setEditingInternalPrice(null);
   };
 
+  // Redirect if not Raden
+  useEffect(() => {
+    if (!sessionLoading && userRole !== "Raden") {
+      router.push("/");
+    }
+  }, [sessionLoading, userRole, router]);
+
   if (sessionLoading) {
     return <SectionLoading />;
+  }
+
+  if (userRole !== "Raden") {
+    return null;
   }
 
   return (

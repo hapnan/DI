@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, radenProcedure } from "~/server/api/trpc";
 import {
@@ -86,7 +86,7 @@ export const priceRouter = createTRPCRouter({
           .returning();
 
         return newPrice;
-      } catch (error) {
+      } catch {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to create group price. It might already exist.",
@@ -214,7 +214,7 @@ export const priceRouter = createTRPCRouter({
           .returning();
 
         return newPrice;
-      } catch (error) {
+      } catch {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to create internal price. It might already exist.",
