@@ -292,6 +292,7 @@ export default function SalesInputPage() {
                         type="number"
                         min="0"
                         placeholder="Enter price per seed"
+                        disabled={getGroupPrice === null}
                         {...field}
                       />
                     </FormControl>

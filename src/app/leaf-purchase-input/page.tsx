@@ -74,7 +74,6 @@ export default function LeafPurchaseInputPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       groupId: "",
-      leafTypeId: "1",
       leavesPurchased: "",
       pricePerLeaf: "",
       totalPrice: "",
@@ -88,6 +87,8 @@ export default function LeafPurchaseInputPage() {
   React.useEffect(() => {
     if (getGroupPrice !== null) {
       form.setValue("pricePerLeaf", getGroupPrice.toString());
+    } else {
+      form.setValue("pricePerLeaf", "");
     }
   }, [getGroupPrice, form]);
 
@@ -239,11 +240,17 @@ export default function LeafPurchaseInputPage() {
                 )}
               />
 
-              {getGroupPrice !== null && (
+              {getGroupPrice !== null ? (
                 <div className="rounded-md border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
                   <p className="text-sm text-green-900 dark:text-green-100">
                     <span className="font-medium">Group Price:</span> $
                     {getGroupPrice} per leaf
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
+                  <p className="text-sm text-red-900 dark:text-red-100">
+                    Please set the price for this group.
                   </p>
                 </div>
               )}
@@ -277,6 +284,7 @@ export default function LeafPurchaseInputPage() {
                         type="number"
                         min="0"
                         placeholder="Enter price per leaf"
+                        disabled={getGroupPrice === null}
                         {...field}
                       />
                     </FormControl>
